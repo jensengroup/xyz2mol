@@ -86,6 +86,7 @@ def BO2mol(mol,BO_matrix, atomicNumList,atomic_valence_electrons):
         raise RuntimeError('sizes of adjMat ({0:d}) and atomicNumList '
             '{1:d} differ'.format(l, l2))
 
+# update bond order info
     rwMol = Chem.RWMol(mol)
 
     bondTypeDict = {
@@ -102,13 +103,16 @@ def BO2mol(mol,BO_matrix, atomicNumList,atomic_valence_electrons):
             bt = bondTypeDict.get(bo, Chem.BondType.SINGLE)
             rwMol.AddBond(i, j, bt)
     mol = rwMol.GetMol()
-    pt = Chem.GetPeriodicTable()
+
+# set atomic charges
     for i,atom in enumerate(atomicNumList):
         a = mol.GetAtomWithIdx(i)
         charge = get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
         if (abs(charge) > 0):
             a.SetFormalCharge(charge)
+
     rdmolops.SanitizeMol(mol)
+
     return mol
 
 
@@ -140,17 +144,22 @@ def AC2BO(AC,atomicNumList,charge):
     atomic_valence_electrons[35] = 7
     atomic_valence_electrons[53] = 7
 
+# make a list of valences, e.g. for CO: [[4],[2,1]]
     valences_list_of_lists = []
     for atomicNum in atomicNumList:
         valences_list_of_lists.append(atomic_valence[atomicNum])
 
+# convert [[4],[2,1]] to [[4,2],[4,1]]
     valences_list = list(itertools.product(*valences_list_of_lists))
 
     best_BO = AC.copy()
 
-    i = 0
+# implemenation of algorithm shown in Figure 2
+# UA: unsaturated atoms
+# DU: degree of unsaturation (u matrix in Figure)
+# best_BO: Bcurr in Figure 
+#
     for valences in valences_list:
-        i += 1
         AC_valence = list(AC.sum(axis=1))
         UA,DU = getUA(valences, AC_valence)
         DU_from_AC = copy.copy(DU)
@@ -170,7 +179,10 @@ def AC2BO(AC,atomicNumList,charge):
 
 
 def AC2mol(mol,AC,atomicNumList,charge):
+# convert AC matrix to bond order (BO) matrix
     BO,atomic_valence_electrons = AC2BO(AC,atomicNumList,charge)
+
+# add BO connectivity and charge info to mol object
     mol = BO2mol(mol,BO, atomicNumList,atomic_valence_electrons)
     
     return mol
