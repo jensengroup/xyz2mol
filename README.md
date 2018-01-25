@@ -5,7 +5,6 @@ The code is  based on this paper Yeonjoon Kim and Woo Youn Kim "Universal Struct
 
 If the molecule is charged then the charge (q) must be supplied in the second line of the xyz file: charge=q= 
 
-usage: type python "xyz2mol.py"
+usage: type "python xyz2mol.py"
 
-I still need to add code to handle B and special rules for carbon atom charges.
-Also, I only use 1 arbitrary start position when constructing the BO matrix (see Fig 1 in the paper).
+I only use 1 arbitrary start position when constructing the BO matrix (see Fig 1 in the paper).
