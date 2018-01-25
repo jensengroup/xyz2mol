@@ -21,30 +21,30 @@ def getUA(maxValence_list, valence_list):
     return UA,DU
 
 
-def get_BO(UA,AC,valences):
+def get_BO(AC,valences):
     BO = AC.copy()
     BO_valence = list(BO.sum(axis=1))
-    UA_new, DU = getUA(valences, BO_valence)
-    
-    while len(UA) > 1:
+    UA,DU = getUA(valences, BO_valence)
+
+    while len(DU) > 1:
         UA_pairs = list(itertools.combinations(UA, 2))
 
         for i,j in UA_pairs:
             if BO[i,j] > 0:
                 BO[i,j] += 1
                 BO[j,i] += 1
-        
-                BO_valence = list(BO.sum(axis=1))
-                UA_new, DU_new = getUA(valences, BO_valence)
                 break
+        
+        BO_valence = list(BO.sum(axis=1))
+        UA_new, DU_new = getUA(valences, BO_valence)
 
-        if UA_new != UA:
+        if DU_new != DU:
             UA = copy.copy(UA_new)
             DU = copy.copy(DU_new)
         else:
             break
     
-    return BO, UA, DU
+    return BO
 
 
 def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList):
@@ -55,6 +55,12 @@ def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList):
             continue
         else:
             q += get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
+            if atom == 6:
+                number_of_single_bonds_to_C = list(BO[i,:]).count(1)
+                if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
+                    q += 1
+                if number_of_single_bonds_to_C == 3 and q + 1 < charge:
+                    q += 2
     
     if (BO-AC).sum() == sum(DU)  and charge == q:
         return True
@@ -65,17 +71,35 @@ def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList):
 def get_atomic_charge(atom,atomic_valence_electrons,BO_valence):
     if atom == 1:
         charge = 0
+    elif atom == 5:
+        charge = 3 - BO_valence
+    elif atom == 15 and BO_valence == 5:
+        charge = 0
+    elif atom == 16 and BO_valence == 6:
+        charge = 0
     else:
         charge = atomic_valence_electrons - 8 + BO_valence
-        if atom == 16 and BO_valence == 6:
-            charge = 0
-        if atom == 15 and BO_valence == 5:
-            charge = 0
-                
+          
     return charge
 
+def clean_charges(mol):
+# this is a temporary hack. The real solution is to generate several BO matrices in AC2BO and pick the one
+# with the lowest number of atomic charges
+#
+    rxn_smarts = ['[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
+                  '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]']
 
-def BO2mol(mol,BO_matrix, atomicNumList,atomic_valence_electrons):
+    for smarts in rxn_smarts:
+        patt = Chem.MolFromSmarts(smarts.split(">>")[0])
+        while mol.HasSubstructMatch(patt):
+            rxn = AllChem.ReactionFromSmarts(smarts)
+            ps = rxn.RunReactants((mol,))
+            mol = ps[0][0]
+                    
+    return mol
+
+
+def BO2mol(mol,BO_matrix, atomicNumList,atomic_valence_electrons,mol_charge):
 # based on code written by Paolo Toscani
 
     l = len(BO_matrix)
@@ -105,13 +129,25 @@ def BO2mol(mol,BO_matrix, atomicNumList,atomic_valence_electrons):
     mol = rwMol.GetMol()
 
 # set atomic charges
+    q = 0
     for i,atom in enumerate(atomicNumList):
         a = mol.GetAtomWithIdx(i)
         charge = get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
+        q += charge
+        if atom == 6:
+            number_of_single_bonds_to_C = list(BO_matrix[i,:]).count(1)
+            if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
+                    q += 1
+                    charge = 0        
+            if number_of_single_bonds_to_C == 3 and q + 1 < mol_charge:
+                    q += 2
+                    charge = 1
+
         if (abs(charge) > 0):
             a.SetFormalCharge(charge)
-
     rdmolops.SanitizeMol(mol)
+    
+    mol = clean_charges(mol)
 
     return mol
 
@@ -131,7 +167,7 @@ def AC2BO(AC,atomicNumList,charge):
     atomic_valence[53] = [1]
     
 
-    atomic_valence_electrons = defaultdict(list)
+    atomic_valence_electrons = {}
     atomic_valence_electrons[1] = 1
     atomic_valence_electrons[6] = 4
     atomic_valence_electrons[7] = 5
@@ -161,18 +197,16 @@ def AC2BO(AC,atomicNumList,charge):
 #
     for valences in valences_list:
         AC_valence = list(AC.sum(axis=1))
-        UA,DU = getUA(valences, AC_valence)
-        DU_from_AC = copy.copy(DU)
-        if len(UA) == 0:
+        UA,DU_from_AC = getUA(valences, AC_valence)
+        if len(UA) == 0 or BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList):
             best_BO = AC.copy()
             break
         else:
-            BO,UA,DU = get_BO(UA,AC,valences)
+            BO = get_BO(AC,valences)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList):
                 best_BO = BO.copy()
                 break
-            else:
-                if BO.sum() > best_BO.sum():
+            elif BO.sum() > best_BO.sum():
                     best_BO = BO.copy()
 
     return best_BO,atomic_valence_electrons
@@ -183,7 +217,7 @@ def AC2mol(mol,AC,atomicNumList,charge):
     BO,atomic_valence_electrons = AC2BO(AC,atomicNumList,charge)
 
 # add BO connectivity and charge info to mol object
-    mol = BO2mol(mol,BO, atomicNumList,atomic_valence_electrons)
+    mol = BO2mol(mol,BO, atomicNumList,atomic_valence_electrons,charge)
     
     return mol
 
@@ -277,39 +311,38 @@ def xyz2mol(filename):
     
     return new_mol
 
+if __name__ == "__main__":
+   filename = "ethane.xyz"
+   filename = "acetate.xyz"
 
-filename = "ethane.xyz"
-filename = "acetate.xyz"
+   mol = xyz2mol(filename)
 
-mol = xyz2mol(filename)
-
-print Chem.MolToSmiles(mol)
+   print Chem.MolToSmiles(mol)
 
 
 # code to test using SMILES instead of xyz file
-mol = Chem.MolFromSmiles('C=C([O-])CC')
-mol = Chem.MolFromSmiles('C=C([NH3+])CC')
-mol = Chem.MolFromSmiles('CC(=O)[O-]')
-mol = Chem.MolFromSmiles('C[N+](=O)[O-]')
-mol = Chem.MolFromSmiles('CS(CC)(=O)=O')
-mol = Chem.MolFromSmiles('CS([O-])(=O)=O')
-#mol = Chem.MolFromSmiles('C=C(C)CC')
-#mol = Chem.MolFromSmiles('CC(C)CC')
-#mol = Chem.MolFromSmiles('C=C(N)CC')
-#mol = Chem.MolFromSmiles('C=C(C)C=C')
-#mol = Chem.MolFromSmiles('C#CC=C')
-#mol = Chem.MolFromSmiles('c1ccccc1')
-#mol = Chem.MolFromSmiles('c1ccccc1c1ccccc1')
+   smiles_list = ['C=C([O-])CC','C=C([NH3+])CC','CC(=O)[O-]','C[N+](=O)[O-]','CS(CC)(=O)=O','CS([O-])(=O)=O',
+                  'C=C(C)CC', 'CC(C)CC','C=C(N)CC','C=C(C)C=C','C#CC=C','c1ccccc1','c1ccccc1c1ccccc1',
+                  '[NH3+]CS([O-])(=O)=O','CC(NC)=O','C[NH+]=C([O-])CC[NH+]=C([O-])C','C[NH+]=CC=C([O-])C',
+                  "[C+](C)(C)CC[C-](C)(C)","[CH2][CH2][CH]=[CH][CH2]"]
 
-rdmolops.Kekulize(mol, clearAromaticFlags = True)
-charge = Chem.GetFormalCharge(mol)
-mol = Chem.AddHs(mol)
-atomicNumList = [a.GetAtomicNum() for a in mol.GetAtoms()]
-proto_mol = get_proto_mol(atomicNumList)
+   for smiles in smiles_list:
+       mol = Chem.MolFromSmiles(smiles)
 
-AC = Chem.GetAdjacencyMatrix(mol)
+       rdmolops.Kekulize(mol, clearAromaticFlags = True)
+       charge = Chem.GetFormalCharge(mol)
+       mol = Chem.AddHs(mol)
+       atomicNumList = [a.GetAtomicNum() for a in mol.GetAtoms()]
+       proto_mol = get_proto_mol(atomicNumList)
 
-newmol = AC2mol(proto_mol,AC,atomicNumList,charge)
-print Chem.MolToSmiles(newmol)
+       AC = Chem.GetAdjacencyMatrix(mol)
 
+       newmol = AC2mol(proto_mol,AC,atomicNumList,charge)
+       newmol = Chem.RemoveHs(newmol)
+       newmol_smiles = Chem.MolToSmiles(newmol)
+    
+       mol = Chem.RemoveHs(mol)
+       canonical_smiles = Chem.MolToSmiles(mol)
+       if newmol_smiles != canonical_smiles:
+           print "uh,oh", smiles, newmol_smiles
 
