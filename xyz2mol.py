@@ -51,16 +51,13 @@ def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList):
     q = 0
     BO_valences = list(BO.sum(axis=1))
     for i,atom in enumerate(atomicNumList):
-        if atom == 1:
-            continue
-        else:
-            q += get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
-            if atom == 6:
-                number_of_single_bonds_to_C = list(BO[i,:]).count(1)
-                if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
-                    q += 1
-                if number_of_single_bonds_to_C == 3 and q + 1 < charge:
-                    q += 2
+        q += get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
+        if atom == 6:
+            number_of_single_bonds_to_C = list(BO[i,:]).count(1)
+            if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
+               q += 1
+            if number_of_single_bonds_to_C == 3 and q + 1 < charge:
+               q += 2
     
     if (BO-AC).sum() == sum(DU)  and charge == q:
         return True
@@ -70,7 +67,7 @@ def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList):
 
 def get_atomic_charge(atom,atomic_valence_electrons,BO_valence):
     if atom == 1:
-        charge = 0
+        charge = 1 - BO_valence
     elif atom == 5:
         charge = 3 - BO_valence
     elif atom == 15 and BO_valence == 5:
