@@ -230,10 +230,7 @@ def get_proto_mol(atomicNumList):
 
     return mol
 
-
-def xyz2AC(filename):
-    import numpy as np
-
+def get_atomicNumList(atomic_symbols):
     symbol2number = {}
     symbol2number["H"] = 1
     symbol2number["C"] = 6
@@ -246,11 +243,18 @@ def xyz2AC(filename):
     symbol2number["Cl"] = 17
     symbol2number["Br"] = 35
     symbol2number["I"] = 53
+    
+    atomicNumList = []
+    
+    for symbol in atomic_symbols:
+        atomicNumList.append(symbol2number[symbol])
+    
+    return atomicNumList
+
+def read_xyz_file(filename):
 
     atomic_symbols = []
-    x_coords = []
-    y_coords = []
-    z_coords = []
+    xyz_coordinates = []
 
     with open(filename, "r") as file:
         for line_number,line in enumerate(file):
@@ -264,44 +268,44 @@ def xyz2AC(filename):
             else:
                 atomic_symbol, x, y, z = line.split()
                 atomic_symbols.append(atomic_symbol)
-                x_coords.append(float(x))
-                y_coords.append(float(y))
-                z_coords.append(float(z))
+                xyz_coordinates.append([float(x),float(y),float(z)])
 
-    atomicNumList = []
-    for symbol in atomic_symbols:
-        atomicNumList.append(symbol2number[symbol])
+    atomicNumList = get_atomicNumList(atomic_symbols)
+    
+    return atomicNumList,charge,xyz_coordinates
 
+def xyz2AC(atomicNumList,xyz):
+    import numpy as np
     mol = get_proto_mol(atomicNumList)
 
     conf = Chem.Conformer(mol.GetNumAtoms())
     for i in range(mol.GetNumAtoms()):
-        conf.SetAtomPosition(i,(x_coords[i],y_coords[i],z_coords[i]))
+        conf.SetAtomPosition(i,(xyz[i][0],xyz[i][1],xyz[i][2]))
     mol.AddConformer(conf)
 
     dMat = Chem.Get3DDistanceMatrix(mol)
     pt = Chem.GetPeriodicTable()
 
+    num_atoms = len(atomicNumList)
     AC = np.zeros((num_atoms,num_atoms)).astype(int)
 
     for i in range(num_atoms):
         a_i = mol.GetAtomWithIdx(i)
-        Rcov_i = pt.GetRcovalent(a_i.GetAtomicNum())*1.25
+        Rcov_i = pt.GetRcovalent(a_i.GetAtomicNum())*1.30
         for j in range(i+1,num_atoms):
             a_j = mol.GetAtomWithIdx(j)
-            Rcov_j = pt.GetRcovalent(a_j.GetAtomicNum())*1.25
+            Rcov_j = pt.GetRcovalent(a_j.GetAtomicNum())*1.30
             if dMat[i,j] <= Rcov_i + Rcov_j:
                 AC[i,j] = 1
                 AC[j,i] = 1
 
-    return AC,atomicNumList,charge,mol
+    return AC,mol
 
-
-def xyz2mol(filename):
+def xyz2mol(atomicNumList,charge,xyz_coordinates):
 
 # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge, 
 # and mol object with no connectivity information
-    AC,atomicNumList,charge,mol = xyz2AC(filename)
+    AC,mol = xyz2AC(atomicNumList,xyz_coordinates)
 
 # Convert AC to bond order matrix and add connectivity and charge info to mol object
     new_mol = AC2mol(mol,AC,atomicNumList,charge)
@@ -312,7 +316,8 @@ if __name__ == "__main__":
    filename = "ethane.xyz"
    filename = "acetate.xyz"
 
-   mol = xyz2mol(filename)
+   atomicNumList,charge,xyz_coordinates = read_xyz_file(filename)
+   mol = xyz2mol(atomicNumList,charge,xyz_coordinates)
 
    print Chem.MolToSmiles(mol)
 
