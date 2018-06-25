@@ -27,7 +27,7 @@ def get_BO(AC,valences):
     UA,DU = getUA(valences, BO_valence)
 
     while len(DU) > 1:
-        UA_pairs = list(itertools.combinations(UA, 2))
+        UA_pairs = itertools.combinations(UA, 2)
 
         for i,j in UA_pairs:
             if BO[i,j] > 0:
@@ -211,7 +211,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
         valences_list_of_lists.append(atomic_valence[atomicNum])
 
 # convert [[4],[2,1]] to [[4,2],[4,1]]
-    valences_list = list(itertools.product(*valences_list_of_lists))
+    valences_list = itertools.product(*valences_list_of_lists)
 
     best_BO = AC.copy()
 
