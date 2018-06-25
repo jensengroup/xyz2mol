@@ -3,12 +3,12 @@
 # "Universal Structure Conversion Method for Organic Molecules: From Atomic Connectivity
 # to Three-Dimensional Geometry" Bull. Korean Chem. Soc. 2015, Vol. 36, 1769-1777 DOI: 10.1002/bkcs.10334
 #
-from rdkit import Chem
-from rdkit.Chem import AllChem
-import itertools
-from rdkit.Chem import rdmolops
-from collections import defaultdict
 import copy
+import itertools
+from collections import defaultdict
+
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdmolops
 
 
 def getUA(maxValence_list, valence_list):
@@ -361,5 +361,3 @@ if __name__ == "__main__":
     smiles = Chem.MolToSmiles(m)
 
     print smiles
-
-
