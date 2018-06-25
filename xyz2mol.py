@@ -82,9 +82,11 @@ def get_atomic_charge(atom,atomic_valence_electrons,BO_valence):
     return charge
 
 def clean_charges(mol):
-# this is a temporary hack. The real solution is to generate several BO matrices in AC2BO and pick the one
-# with the lowest number of atomic charges
-#
+    """
+    this is a temporary hack. The real solution is to generate several BO matrices in AC2BO and pick the one
+    with the lowest number of atomic charges
+
+    """
     rxn_smarts = ['[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
                   '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]']
 
@@ -106,7 +108,9 @@ def clean_charges(mol):
 
 
 def BO2mol(mol,BO_matrix, atomicNumList,atomic_valence_electrons,mol_charge,charged_fragments):
-# based on code written by Paolo Toscani
+    """
+    based on code written by Paolo Toscani
+    """
 
     l = len(BO_matrix)
     l2 = len(atomicNumList)
@@ -164,7 +168,9 @@ def set_atomic_charges(mol,atomicNumList,atomic_valence_electrons,BO_valences,BO
 
 
 def set_atomic_radicals(mol,atomicNumList,atomic_valence_electrons,BO_valences):
-# The number of radical electrons = absolute atomic charge
+    """
+    The number of radical electrons = absolute atomic charge
+    """
     for i,atom in enumerate(atomicNumList):
         a = mol.GetAtomWithIdx(i)
         charge = get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
@@ -205,21 +211,21 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
     atomic_valence_electrons[35] = 7
     atomic_valence_electrons[53] = 7
 
-# make a list of valences, e.g. for CO: [[4],[2,1]]
+    # make a list of valences, e.g. for CO: [[4],[2,1]]
     valences_list_of_lists = []
     for atomicNum in atomicNumList:
         valences_list_of_lists.append(atomic_valence[atomicNum])
 
-# convert [[4],[2,1]] to [[4,2],[4,1]]
+    # convert [[4],[2,1]] to [[4,2],[4,1]]
     valences_list = itertools.product(*valences_list_of_lists)
 
     best_BO = AC.copy()
 
-# implemenation of algorithm shown in Figure 2
-# UA: unsaturated atoms
-# DU: degree of unsaturation (u matrix in Figure)
-# best_BO: Bcurr in Figure 
-#
+    # implemenation of algorithm shown in Figure 2
+    # UA: unsaturated atoms
+    # DU: degree of unsaturation (u matrix in Figure)
+    # best_BO: Bcurr in Figure 
+
     for valences in valences_list:
         AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
@@ -238,10 +244,10 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
 
 
 def AC2mol(mol,AC,atomicNumList,charge,charged_fragments):
-# convert AC matrix to bond order (BO) matrix
+    # convert AC matrix to bond order (BO) matrix
     BO,atomic_valence_electrons = AC2BO(AC,atomicNumList,charge,charged_fragments)
 
-# add BO connectivity and charge info to mol object
+    # add BO connectivity and charge info to mol object
     mol = BO2mol(mol,BO, atomicNumList,atomic_valence_electrons,charge,charged_fragments)
 
     return mol
@@ -332,11 +338,11 @@ def xyz2AC(atomicNumList,xyz):
 
 def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments):
 
-# Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge, 
-# and mol object with no connectivity information
+    # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge, 
+    # and mol object with no connectivity information
     AC,mol = xyz2AC(atomicNumList,xyz_coordinates)
 
-# Convert AC to bond order matrix and add connectivity and charge info to mol object
+    # Convert AC to bond order matrix and add connectivity and charge info to mol object
     new_mol = AC2mol(mol,AC,atomicNumList,charge,charged_fragments)
     
     return new_mol
