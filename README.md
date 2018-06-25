@@ -1,13 +1,11 @@
 # xyz2mol
 
-This program is now included in the [take_elemtary_step repo](https://github.com/jensengroup/take_elementary_step) and I'm moving development of this program over to that repo.
-
 Converts an xyz file to an RDKit mol object
 
 The code is  based on this paper Yeonjoon Kim and Woo Youn Kim "Universal Structure Conversion Method for Organic Molecules: From Atomic Connectivity to Three-Dimensional Geometry" Bull. Korean Chem. Soc. 2015, Vol. 36, 1769-1777 DOI: 10.1002/bkcs.10334
 
 If the molecule is charged then the charge (q) must be supplied in the second line of the xyz file: charge=q= 
 
-usage: type "python xyz2mol.py"
+usage: type "python xyz2mol.py xxx.xyz"
 
 I only use 1 arbitrary start position when constructing the BO matrix (see Fig 1 in the paper).
