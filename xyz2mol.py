@@ -160,7 +160,7 @@ def set_atomic_charges(mol,atomicNumList,atomic_valence_electrons,BO_valences,BO
                     charge = 1
 
         if (abs(charge) > 0):
-            a.SetFormalCharge(charge)
+            a.SetFormalCharge(int(charge))
     #rdmolops.SanitizeMol(mol)
     mol = clean_charges(mol)
 
