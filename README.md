@@ -8,4 +8,3 @@ If the molecule is charged then the charge (q) must be supplied in the second li
 
 usage: type "python xyz2mol.py xxx.xyz"
 
-I only use 1 arbitrary start position when constructing the BO matrix (see Fig 1 in the paper).
