@@ -20,20 +20,43 @@ def getUA(maxValence_list, valence_list):
             DU.append(maxValence - valence)
     return UA,DU
 
+def get_atoms_min_connectivity(AC,atomicNumList):
+    heavy_atom_connectivity = []
+    for atomic_number, row in zip(atomicNumList,AC):
+        count = 0
+        for bond, atomic_number2 in zip(row,atomicNumList):
+            #print atomicNumList[i]
+            if atomic_number2 != 1 and bond == 1:
+                count += 1
+        if atomic_number == 1:
+            count = 9 # no multiple bonds to H's, so ignore
+        heavy_atom_connectivity.append(count)
 
-def get_BO(AC,valences):
+    min_connectivity = min(heavy_atom_connectivity)
+    atoms_min_connectivity = []
+    for i,connectivity in enumerate(heavy_atom_connectivity):
+        if connectivity == min_connectivity:
+            atoms_min_connectivity.append(i)
+
+    return atoms_min_connectivity
+
+
+def get_BO(AC,valences,get_atomicNumList):
     BO = AC.copy()
     BO_valence = list(BO.sum(axis=1))
     UA,DU = getUA(valences, BO_valence)
+
+    atoms_min_connectivity = get_atoms_min_connectivity(AC,atomicNumList)
 
     while len(DU) > 1:
         UA_pairs = list(itertools.combinations(UA, 2))
 
         for i,j in UA_pairs:
-            if BO[i,j] > 0:
-                BO[i,j] += 1
-                BO[j,i] += 1
-                break
+            if i in atoms_min_connectivity or j in atoms_min_connectivity:
+                if BO[i,j] > 0:
+                    BO[i,j] += 1
+                    BO[j,i] += 1
+                    break
         
         BO_valence = list(BO.sum(axis=1))
         UA_new, DU_new = getUA(valences, BO_valence)
@@ -227,7 +250,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
             best_BO = AC.copy()
             break
         else:
-            BO = get_BO(AC,valences)
+            BO = get_BO(AC,valences,atomicNumList)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
                 best_BO = BO.copy()
                 break
