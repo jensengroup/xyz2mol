@@ -41,7 +41,7 @@ def get_atoms_min_connectivity(AC,atomicNumList):
     return atoms_min_connectivity
 
 
-def get_BO(AC,valences,get_atomicNumList):
+def get_BO(AC,valences,atomicNumList):
     BO = AC.copy()
     BO_valence = list(BO.sum(axis=1))
     UA,DU = getUA(valences, BO_valence)
