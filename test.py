@@ -1,4 +1,3 @@
-
 from rdkit import Chem
 from rdkit.Chem import rdmolops
 from rdkit.Chem import AllChem
