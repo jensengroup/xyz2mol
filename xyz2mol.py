@@ -11,6 +11,25 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, rdmolops
 
 
+global __ATOM_LIST__
+__ATOM_LIST__ = [ x.strip() for x in ['h ','he', \
+      'li','be','b ','c ','n ','o ','f ','ne', \
+      'na','mg','al','si','p ','s ','cl','ar', \
+      'k ','ca','sc','ti','v ','cr','mn','fe','co','ni','cu', \
+      'zn','ga','ge','as','se','br','kr', \
+      'rb','sr','y ','zr','nb','mo','tc','ru','rh','pd','ag', \
+      'cd','in','sn','sb','te','i ','xe', \
+      'cs','ba','la','ce','pr','nd','pm','sm','eu','gd','tb','dy', \
+      'ho','er','tm','yb','lu','hf','ta','w ','re','os','ir','pt', \
+      'au','hg','tl','pb','bi','po','at','rn', \
+      'fr','ra','ac','th','pa','u ','np','pu'] ]
+
+def get_atom(atom):
+    global __ATOM_LIST__
+    atom = atom.lower()
+    return __ATOM_LIST__.index(atom) + 1
+
+
 def getUA(maxValence_list, valence_list):
     UA = []
     DU = []
@@ -57,7 +76,6 @@ def get_BO(AC,valences,get_atomicNumList):
                     BO[i,j] += 1
                     BO[j,i] += 1
                     break
-        
         BO_valence = list(BO.sum(axis=1))
         UA_new, DU_new = getUA(valences, BO_valence)
 
@@ -66,7 +84,7 @@ def get_BO(AC,valences,get_atomicNumList):
             DU = copy.copy(DU_new)
         else:
             break
-    
+
     return BO
 
 
@@ -101,7 +119,7 @@ def get_atomic_charge(atom,atomic_valence_electrons,BO_valence):
         charge = 0
     else:
         charge = atomic_valence_electrons - 8 + BO_valence
-          
+
     return charge
 
 def clean_charges(mol):
@@ -126,7 +144,7 @@ def clean_charges(mol):
             mol = fragment
         else:
             mol = Chem.CombineMols(mol,fragment)
-                        
+
     return mol
 
 
@@ -205,6 +223,7 @@ def set_atomic_radicals(mol,atomicNumList,atomic_valence_electrons,BO_valences):
 
 
 def AC2BO(AC,atomicNumList,charge,charged_fragments):
+    # TODO
     atomic_valence = defaultdict(list)
     atomic_valence[1] = [1]
     atomic_valence[6] = [4]
@@ -218,7 +237,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
     atomic_valence[32] = [4]
     atomic_valence[35] = [1]
     atomic_valence[53] = [1]
-    
+
 
     atomic_valence_electrons = {}
     atomic_valence_electrons[1] = 1
@@ -287,27 +306,13 @@ def get_proto_mol(atomicNumList):
 
     return mol
 
+
 def get_atomicNumList(atomic_symbols):
-    symbol2number = {}
-    symbol2number["H"] = 1
-    symbol2number["C"] = 6
-    symbol2number["N"] = 7
-    symbol2number["O"] = 8
-    symbol2number["F"] = 9
-    symbol2number["Si"] = 14
-    symbol2number["P"] = 15
-    symbol2number["S"] = 16
-    symbol2number["Cl"] = 17
-    symbol2number["Ge"] = 32
-    symbol2number["Br"] = 35
-    symbol2number["I"] = 53
-    
     atomicNumList = []
-    
     for symbol in atomic_symbols:
-        atomicNumList.append(symbol2number[symbol])
-    
+        atomicNumList.append(get_atom(symbol))
     return atomicNumList
+
 
 def read_xyz_file(filename):
 
@@ -367,7 +372,7 @@ def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments):
 
     # Convert AC to bond order matrix and add connectivity and charge info to mol object
     new_mol = AC2mol(mol,AC,atomicNumList,charge,charged_fragments)
-    
+
     return new_mol
 
 if __name__ == "__main__":
@@ -376,13 +381,21 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(usage='%(prog)s [options] molecule.xyz')
     parser.add_argument('structure', metavar='structure', type=str)
+    parser.add_argument('-s', '--sdf', action="store_true", help="Dump sdf file")
     args = parser.parse_args()
 
     filename = args.structure
     charged_fragments = True
-    atomicNumList,charge,xyz_coordinates = read_xyz_file(filename)
 
-    mol = xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments)
+    atomicNumList, charge, xyz_coordinates = read_xyz_file(filename)
+
+    mol = xyz2mol(atomicNumList, charge, xyz_coordinates, charged_fragments)
+
+    if args.sdf:
+        filename = filename.replace(".xyz", "")
+        filename += ".sdf"
+        writer = Chem.SDWriter(filename)
+        writer.write(mol)
 
     # Canonical hack
     smiles = Chem.MolToSmiles(mol)
@@ -390,3 +403,5 @@ if __name__ == "__main__":
     smiles = Chem.MolToSmiles(m)
 
     print smiles
+
+
