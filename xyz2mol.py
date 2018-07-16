@@ -158,7 +158,7 @@ def set_atomic_charges(mol,atomicNumList,atomic_valence_electrons,BO_valences,BO
                     charge = 1
 
         if (abs(charge) > 0):
-            a.SetFormalCharge(charge)
+            a.SetFormalCharge(int(charge))
     #rdmolops.SanitizeMol(mol)
     mol = clean_charges(mol)
 
@@ -230,6 +230,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
             best_BO = AC.copy()
             break
         UA_perm = itertools.permutations(UA)
+        #print UA, list(UA_perm)
         for UA_try in UA_perm:
             BO = get_BO(AC,UA_try,DU_from_AC,valences)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
