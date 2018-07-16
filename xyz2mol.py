@@ -20,49 +20,28 @@ def getUA(maxValence_list, valence_list):
             DU.append(maxValence - valence)
     return UA,DU
 
-def get_atoms_min_connectivity(AC,atomicNumList):
-    heavy_atom_connectivity = []
-    for atomic_number, row in zip(atomicNumList,AC):
-        count = 0
-        for bond, atomic_number2 in zip(row,atomicNumList):
-            #print atomicNumList[i]
-            if atomic_number2 != 1 and bond == 1:
-                count += 1
-        if atomic_number == 1:
-            count = 9 # no multiple bonds to H's, so ignore
-        heavy_atom_connectivity.append(count)
 
-    min_connectivity = min(heavy_atom_connectivity)
-    atoms_min_connectivity = []
-    for i,connectivity in enumerate(heavy_atom_connectivity):
-        if connectivity == min_connectivity:
-            atoms_min_connectivity.append(i)
-
-    return atoms_min_connectivity
-
-
-def get_BO(AC,valences,get_atomicNumList):
+def get_BO(AC,UA_try,DU,valences):
     BO = AC.copy()
-    BO_valence = list(BO.sum(axis=1))
-    UA,DU = getUA(valences, BO_valence)
-
-    atoms_min_connectivity = get_atoms_min_connectivity(AC,atomicNumList)
+    #BO_valence = list(BO.sum(axis=1))
+    #UA,DU = getUA(valences, BO_valence)
+    UA = list(UA_try)
 
     while len(DU) > 1:
-        UA_pairs = list(itertools.combinations(UA, 2))
+        UA_pairs = itertools.combinations(UA, 2)
 
         for i,j in UA_pairs:
-            if i in atoms_min_connectivity or j in atoms_min_connectivity:
-                if BO[i,j] > 0:
-                    BO[i,j] += 1
-                    BO[j,i] += 1
-                    break
+            if BO[i,j] > 0:
+                BO[i,j] += 1
+                BO[j,i] += 1
+                break
         
         BO_valence = list(BO.sum(axis=1))
         UA_new, DU_new = getUA(valences, BO_valence)
 
         if DU_new != DU:
-            UA = copy.copy(UA_new)
+            #UA = copy.copy(UA_new)
+            UA = [UA_i for UA_i in UA_try if UA_i in UA_new]
             DU = copy.copy(DU_new)
         else:
             break
@@ -243,19 +222,24 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
 # DU: degree of unsaturation (u matrix in Figure)
 # best_BO: Bcurr in Figure 
 #
+    is_best_BO = True
     for valences in valences_list:
         AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
         if len(UA) == 0 or BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
             best_BO = AC.copy()
             break
-        else:
-            BO = get_BO(AC,valences,atomicNumList)
+        UA_perm = itertools.permutations(UA)
+        for UA_try in UA_perm:
+            BO = get_BO(AC,UA_try,DU_from_AC,valences)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
                 best_BO = BO.copy()
+                is_best_BO = True
                 break
             elif BO.sum() > best_BO.sum():
                     best_BO = BO.copy()
+        if is_best_BO:
+            break
 
     return best_BO,atomic_valence_electrons
 
