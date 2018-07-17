@@ -41,6 +41,7 @@ def get_BO(AC,UA_try,DU,valences):
 
         if DU_new != DU:
             #UA = copy.copy(UA_new)
+            # change the order of UA_new elements to match that in UA_try
             UA = [UA_i for UA_i in UA_try if UA_i in UA_new]
             DU = copy.copy(DU_new)
         else:
