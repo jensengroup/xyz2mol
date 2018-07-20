@@ -10,6 +10,25 @@ from rdkit.Chem import rdmolops
 from collections import defaultdict
 import copy
 
+def get_atoms_min_connectivity(AC,atomicNumList):
+    heavy_atom_connectivity = []
+    for atomic_number, row in zip(atomicNumList,AC):
+        count = 0
+        for bond, atomic_number2 in zip(row,atomicNumList):
+            #print atomicNumList[i]
+            if atomic_number2 != 1 and bond == 1:
+                count += 1
+        if atomic_number == 1:
+            count = 9 # no multiple bonds to H's, so ignore
+        heavy_atom_connectivity.append(count)
+
+    min_connectivity = min(heavy_atom_connectivity)
+    atoms_min_connectivity = []
+    for i,connectivity in enumerate(heavy_atom_connectivity):
+        if connectivity == min_connectivity:
+            atoms_min_connectivity.append(i)
+
+    return atoms_min_connectivity
 
 def getUA(maxValence_list, valence_list):
     UA = []
@@ -218,6 +237,10 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
 
     best_BO = AC.copy()
 
+    atoms_min_connectivity = get_atoms_min_connectivity(AC,atomicNumList)
+    #print atoms_min_connectivity
+
+
 # implemenation of algorithm shown in Figure 2
 # UA: unsaturated atoms
 # DU: degree of unsaturation (u matrix in Figure)
@@ -230,8 +253,20 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
         if len(UA) == 0 or BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
             best_BO = AC.copy()
             break
-        UA_perm = itertools.permutations(UA)
-        #print UA, list(UA_perm)
+        #UA_perm = list(itertools.permutations(UA))
+        UA_atoms_min_connectivity = list(set(atoms_min_connectivity) & set(UA))
+        rest = list(set(UA)-set(UA_atoms_min_connectivity))
+        #print UA, UA_atoms_min_connectivity,rest
+        quick = True
+        if quick:
+            UA_atoms_min_connectivity_perm = [UA_atoms_min_connectivity + rest]
+        else:
+            UA_atoms_min_connectivity_perm = list(itertools.permutations(UA_atoms_min_connectivity))
+
+        UA_perm = [list(a) + rest for a in UA_atoms_min_connectivity_perm]
+
+        #print len(UA_perm)
+        #print UA, UA_perm
         for UA_try in UA_perm:
             BO = get_BO(AC,UA_try,DU_from_AC,valences)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
