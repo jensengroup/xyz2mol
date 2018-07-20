@@ -10,9 +10,10 @@ if __name__ == "__main__":
     filename = "acetate.xyz"
 
     charged_fragments = True
+    quick = True
 
     atomicNumList,charge,xyz_coordinates = x2m.read_xyz_file(filename)
-    mol = x2m.xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments)
+    mol = x2m.xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick)
 
     print Chem.MolToSmiles(mol)
 
@@ -33,7 +34,7 @@ if __name__ == "__main__":
 
         AC = Chem.GetAdjacencyMatrix(mol)
 
-        newmol = x2m.AC2mol(proto_mol,AC,atomicNumList,charge,charged_fragments)
+        newmol = x2m.AC2mol(proto_mol,AC,atomicNumList,charge,charged_fragments,quick)
         newmol = Chem.RemoveHs(newmol)
         newmol_smiles = Chem.MolToSmiles(newmol)
 
