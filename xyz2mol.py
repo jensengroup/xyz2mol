@@ -24,6 +24,26 @@ __ATOM_LIST__ = [ x.strip() for x in ['h ','he', \
       'au','hg','tl','pb','bi','po','at','rn', \
       'fr','ra','ac','th','pa','u ','np','pu'] ]
 
+def get_atoms_min_connectivity(AC,atomicNumList):
+    heavy_atom_connectivity = []
+    for atomic_number, row in zip(atomicNumList,AC):
+        count = 0
+        for bond, atomic_number2 in zip(row,atomicNumList):
+            #print atomicNumList[i]
+            if atomic_number2 != 1 and bond == 1:
+                count += 1
+        if atomic_number == 1:
+            count = 9 # no multiple bonds to H's, so ignore
+        heavy_atom_connectivity.append(count)
+
+    min_connectivity = min(heavy_atom_connectivity)
+    atoms_min_connectivity = []
+    for i,connectivity in enumerate(heavy_atom_connectivity):
+        if connectivity == min_connectivity:
+            atoms_min_connectivity.append(i)
+
+    return atoms_min_connectivity
+
 def get_atom(atom):
     global __ATOM_LIST__
     atom = atom.lower()
@@ -197,7 +217,7 @@ def set_atomic_radicals(mol,atomicNumList,atomic_valence_electrons,BO_valences):
     return mol
 
 
-def AC2BO(AC,atomicNumList,charge,charged_fragments):
+def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
     # TODO
     atomic_valence = defaultdict(list)
     atomic_valence[1] = [1]
@@ -238,6 +258,8 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
 
     best_BO = AC.copy()
 
+    atoms_min_connectivity = get_atoms_min_connectivity(AC,atomicNumList)
+
 # implemenation of algorithm shown in Figure 2
 # UA: unsaturated atoms
 # DU: degree of unsaturation (u matrix in Figure)
@@ -250,8 +272,19 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
         if len(UA) == 0 or BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
             best_BO = AC.copy()
             break
-        UA_perm = itertools.permutations(UA)
-        #print UA, list(UA_perm)
+        
+        UA_atoms_min_connectivity = list(set(atoms_min_connectivity) & set(UA))
+        rest = list(set(UA)-set(UA_atoms_min_connectivity))
+        
+        if quick:
+            UA_atoms_min_connectivity_perm = [UA_atoms_min_connectivity + rest]
+        else:
+            UA_atoms_min_connectivity_perm = list(itertools.permutations(UA_atoms_min_connectivity))
+
+        UA_perm = [list(a) + rest for a in UA_atoms_min_connectivity_perm]
+
+        #print len(UA_perm)
+        #print UA, UA_perm
         for UA_try in UA_perm:
             BO = get_BO(AC,UA_try,DU_from_AC,valences)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
@@ -266,9 +299,9 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments):
     return best_BO,atomic_valence_electrons
 
 
-def AC2mol(mol,AC,atomicNumList,charge,charged_fragments):
+def AC2mol(mol,AC,atomicNumList,charge,charged_fragments,quick):
 # convert AC matrix to bond order (BO) matrix
-    BO,atomic_valence_electrons = AC2BO(AC,atomicNumList,charge,charged_fragments)
+    BO,atomic_valence_electrons = AC2BO(AC,atomicNumList,charge,charged_fragments,quick)
 
 # add BO connectivity and charge info to mol object
     mol = BO2mol(mol,BO, atomicNumList,atomic_valence_electrons,charge,charged_fragments)
@@ -345,14 +378,14 @@ def xyz2AC(atomicNumList,xyz):
 
     return AC,mol
 
-def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments):
+def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick):
 
 # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge, 
 # and mol object with no connectivity information
     AC,mol = xyz2AC(atomicNumList,xyz_coordinates)
 
 # Convert AC to bond order matrix and add connectivity and charge info to mol object
-    new_mol = AC2mol(mol,AC,atomicNumList,charge,charged_fragments)
+    new_mol = AC2mol(mol,AC,atomicNumList,charge,charged_fragments,quick)
 
     return new_mol
 
@@ -367,11 +400,12 @@ if __name__ == "__main__":
 
     
     filename = args.structure
-    charged_fragments = True
+    charged_fragments = True # alternatively radicals are made
+    quick = True # try only one combination of UA atoms in AC2BO
 
     atomicNumList, charge, xyz_coordinates = read_xyz_file(filename)
 
-    mol = xyz2mol(atomicNumList, charge, xyz_coordinates, charged_fragments)
+    mol = xyz2mol(atomicNumList, charge, xyz_coordinates, charged_fragments, quick)
 
     if args.sdf:
         filename = filename.replace(".xyz", "")
