@@ -127,8 +127,12 @@ def clean_charges(mol):
 # this is a temporary hack. The real solution is to generate several BO matrices in AC2BO and pick the one
 # with the lowest number of atomic charges
 #
+    #print 'clean_charges',Chem.MolToSmiles(mol)
     rxn_smarts = ['[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
-                  '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]']
+                  '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]',
+                  #'[#8:1]=[#6:2][#6:3]=[#6:4][#6-:5]>>[*-:1][*:2]=[*:3][*:4]=[*+0:5]',
+                  '[O:1]=[c:2][c-:3]>>[*-:1][*:2][*+0:3]',
+                  '[O:1]=[C:2][C-:3]>>[*-:1][*:2]=[*+0:3]']
 
     fragments = Chem.GetMolFrags(mol,asMols=True)
 
@@ -143,6 +147,8 @@ def clean_charges(mol):
             mol = fragment
         else:
             mol = Chem.CombineMols(mol,fragment)
+
+    #print Chem.MolToSmiles(mol)
 
     return mol
 
