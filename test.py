@@ -10,7 +10,7 @@ if __name__ == "__main__":
     filename = "acetate.xyz"
 
     charged_fragments = True
-    quick = True
+    quick = False
 
     atomicNumList,charge,xyz_coordinates = x2m.read_xyz_file(filename)
     mol = x2m.xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick)
@@ -21,7 +21,9 @@ if __name__ == "__main__":
     smiles_list = ['C=C([O-])CC','C=C([NH3+])CC','CC(=O)[O-]','C[N+](=O)[O-]','CS(CC)(=O)=O','CS([O-])(=O)=O',
                 'C=C(C)CC', 'CC(C)CC','C=C(N)CC','C=C(C)C=C','C#CC=C','c1ccccc1','c1ccccc1c1ccccc1',
                 '[NH3+]CS([O-])(=O)=O','CC(NC)=O','C[NH+]=C([O-])CC[NH+]=C([O-])C','C[NH+]=CC=C([O-])C',
-                "[C+](C)(C)CC[C-](C)(C)","[CH2][CH2][CH]=[CH][CH2]"]
+                "[C+](C)(C)CC[C-](C)(C)","[CH2][CH2][CH]=[CH][CH2]",'[O-]c1ccccc1','O=C(C=C1)C=CC1=CCC([O-])=O',
+                'O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]']
+    #smiles_list = ['O=C(C=C1)C=CC1=CCC([O-])=O','O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','[O-]c1ccccc1']
 
     for smiles in smiles_list:
         mol = Chem.MolFromSmiles(smiles)
@@ -35,8 +37,10 @@ if __name__ == "__main__":
         AC = Chem.GetAdjacencyMatrix(mol)
 
         newmol = x2m.AC2mol(proto_mol,AC,atomicNumList,charge,charged_fragments,quick)
+        #print Chem.MolToSmiles(newmol)
         newmol = Chem.RemoveHs(newmol)
         newmol_smiles = Chem.MolToSmiles(newmol)
+        #print newmol_smiles
 
         mol = Chem.RemoveHs(mol)
         canonical_smiles = Chem.MolToSmiles(mol)
