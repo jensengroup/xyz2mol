@@ -22,7 +22,7 @@ if __name__ == "__main__":
                 'C=C(C)CC', 'CC(C)CC','C=C(N)CC','C=C(C)C=C','C#CC=C','c1ccccc1','c1ccccc1c1ccccc1',
                 '[NH3+]CS([O-])(=O)=O','CC(NC)=O','C[NH+]=C([O-])CC[NH+]=C([O-])C','C[NH+]=CC=C([O-])C',
                 "[C+](C)(C)CC[C-](C)(C)","[CH2][CH2][CH]=[CH][CH2]",'[O-]c1ccccc1','O=C(C=C1)C=CC1=CCC([O-])=O',
-                'O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]']
+                'O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','CNC(/C(C)=[NH+]/[CH-]CC(O)=O)=O']
     #smiles_list = ['O=C(C=C1)C=CC1=CCC([O-])=O','O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','[O-]c1ccccc1']
 
     for smiles in smiles_list:
