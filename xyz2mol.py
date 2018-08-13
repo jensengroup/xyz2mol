@@ -127,28 +127,31 @@ def clean_charges(mol):
 # this is a temporary hack. The real solution is to generate several BO matrices in AC2BO and pick the one
 # with the lowest number of atomic charges
 #
-    #print 'clean_charges',Chem.MolToSmiles(mol)
-    rxn_smarts = ['[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
+    #print('clean_charges',Chem.MolToSmiles(mol))
+    rxn_smarts = ['[N+:1]=[*:2]-[C-:3]>>[N+0:1]-[*:2]=[C-0:3]',
+                  '[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
                   '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]',
                   '[#8:1]=[#6:2]([!-:6])[*:3]=[*:4][#6-:5]>>[*-:1][*:2]([*:6])=[*:3][*:4]=[*+0:5]',
                   '[O:1]=[c:2][c-:3]>>[*-:1][*:2][*+0:3]',
                   '[O:1]=[C:2][C-:3]>>[*-:1][*:2]=[*+0:3]']
 
-    fragments = Chem.GetMolFrags(mol,asMols=True)
+    fragments = Chem.GetMolFrags(mol,asMols=True,sanitizeFrags=False)
 
     for i,fragment in enumerate(fragments):
+        #print(Chem.MolToSmiles(fragment))
         for smarts in rxn_smarts:
             patt = Chem.MolFromSmarts(smarts.split(">>")[0])
             while fragment.HasSubstructMatch(patt):
                 rxn = AllChem.ReactionFromSmarts(smarts)
                 ps = rxn.RunReactants((fragment,))
                 fragment = ps[0][0]
+                #print(smarts,Chem.MolToSmiles(fragment))
         if i == 0:
             mol = fragment
         else:
             mol = Chem.CombineMols(mol,fragment)
 
-    #print Chem.MolToSmiles(mol)
+    #print(Chem.MolToSmiles(mol))
 
     return mol
 
@@ -424,4 +427,4 @@ if __name__ == "__main__":
     m = Chem.MolFromSmiles(smiles)
     smiles = Chem.MolToSmiles(m)
 
-    print smiles
+    print(smiles)
