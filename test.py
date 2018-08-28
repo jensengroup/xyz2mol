@@ -25,6 +25,7 @@ if __name__ == "__main__":
                 'O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','CNC(/C(C)=[NH+]/[CH-]CC(O)=O)=O']
     #smiles_list = ['O=C(C=C1)C=CC1=CCC([O-])=O','O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','[O-]c1ccccc1']
     #smiles_list = ['CC(Nc1ccc(O)cc1)=O']
+    #smiles_list = ['C#C']
 
     for smiles in smiles_list:
         mol = Chem.MolFromSmiles(smiles)
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 
         newmol = Chem.RemoveHs(newmol)
         newmol_smiles = Chem.MolToSmiles(newmol)
-        #print newmol_smiles
+        #print (newmol_smiles)
 
         mol = Chem.RemoveHs(mol)
         canonical_smiles = Chem.MolToSmiles(mol)
