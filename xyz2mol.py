@@ -67,7 +67,7 @@ def getUA(maxValence_list, valence_list):
     return UA,DU
 
 
-def get_BO(AC,UA,DU,valences,UA_pairs):
+def get_BO(AC,UA,DU,valences,UA_pairs,quick):
     BO = AC.copy()
     DU_save = []
 
@@ -78,10 +78,14 @@ def get_BO(AC,UA,DU,valences,UA_pairs):
             #if BO[i,j] > 0:
             BO[i,j] += 1
             BO[j,i] += 1
+            if not quick:
+                break #removing this break statement will work for all but the most pathological cases
         
         BO_valence = list(BO.sum(axis=1))
         DU_save = copy.copy(DU)
         UA, DU = getUA(valences, BO_valence)
+        print('len(UA)',len(UA))
+        print('UA_pairs',get_UA_pairs(UA,AC))
         UA_pairs = get_UA_pairs(UA,AC)[0]
 
     return BO
@@ -109,16 +113,16 @@ def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList,charged_frag
                 q_list.append(q)
 
     print ('charge,Q,q_list',charge,Q,q_list)
-    print ((BO-AC).sum() == sum(DU), charge == Q, len(q_list) <= abs(charge))
+    #print ((BO-AC).sum() == sum(DU), charge == Q, len(q_list) <= abs(charge))
     print ((BO-AC).sum(), sum(DU))
-    print(BO)
-    print(AC)
-    print(DU)
+    #print(BO)
+    #print(AC)
+    #print(DU)
     if (BO-AC).sum() == sum(DU) and charge == Q and len(q_list) <= abs(charge):
         print('BO_is_OK',True)
         return True
     else:
-        print('BO_is_OK',False)
+        #print('BO_is_OK',False)
         return False
 
 
@@ -240,8 +244,10 @@ def set_atomic_radicals(mol,atomicNumList,atomic_valence_electrons,BO_valences):
 
 def get_bonds(UA,AC):
     bonds = []
-    for i in UA:
-        for j in UA[i:]:
+
+    for k,i in enumerate(UA):
+        for j in UA[k+1:]:
+            if UA == [2,3,7,8]: print(i,j,AC[i,j])
             if AC[i,j] == 1:
                 bonds.append(tuple(sorted([i,j])))
 
@@ -249,16 +255,19 @@ def get_bonds(UA,AC):
 
 def get_UA_pairs(UA,AC):
     bonds = get_bonds(UA,AC)
+    print('bonds',bonds,len(bonds))
+    if len(bonds) == 0:
+        return [()]
 
     max_atoms_in_combo = 0
-    UA_pairs = []
-    for combo in itertools.combinations(bonds, int(len(bonds)/2)):
-        flat_list = [item for sublist in combo for item in sublist]
-        atoms_in_combo = len(set(flat_list))
-    if atoms_in_combo > max_atoms_in_combo:
+    UA_pairs = [()]
+    for combo in list(itertools.combinations(bonds, int(len(UA)/2))):
+      flat_list = [item for sublist in combo for item in sublist]
+      atoms_in_combo = len(set(flat_list))
+      if atoms_in_combo > max_atoms_in_combo:
         max_atoms_in_combo = atoms_in_combo
         UA_pairs = [combo]
-    elif atoms_in_combo == max_atoms_in_combo:
+      elif atoms_in_combo == max_atoms_in_combo:
         UA_pairs.append(combo)
 
     return UA_pairs
@@ -318,14 +327,15 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
         print('valences',valences)
         AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
-        print('UA',UA)
+        #print('UA',UA)
         if len(UA) == 0 or BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
             best_BO = AC.copy()
             break
         
         UA_pairs_list = get_UA_pairs(UA,AC)
+        print('UA_pairs_list',UA_pairs_list,UA)
         for UA_pairs in UA_pairs_list:
-            BO = get_BO(AC,UA,DU_from_AC,valences,UA_pairs)
+            BO = get_BO(AC,UA,DU_from_AC,valences,UA_pairs,quick)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
                 best_BO = BO.copy()
                 is_best_BO = True
