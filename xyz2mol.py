@@ -274,7 +274,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
 # DU: degree of unsaturation (u matrix in Figure)
 # best_BO: Bcurr in Figure 
 #
-    is_best_BO = True
+    is_best_BO = False
     for valences in valences_list:
         AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
@@ -302,6 +302,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
                 break
             elif BO.sum() > best_BO.sum():
                     best_BO = BO.copy()
+
         if is_best_BO:
             break
 
