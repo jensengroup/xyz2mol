@@ -24,25 +24,20 @@ __ATOM_LIST__ = [ x.strip() for x in ['h ','he', \
       'au','hg','tl','pb','bi','po','at','rn', \
       'fr','ra','ac','th','pa','u ','np','pu'] ]
 
-def get_atoms_min_connectivity(AC,atomicNumList):
-    heavy_atom_connectivity = []
-    for atomic_number, row in zip(atomicNumList,AC):
-        count = 0
-        for bond, atomic_number2 in zip(row,atomicNumList):
-            #print atomicNumList[i]
-            if atomic_number2 != 1 and bond == 1:
-                count += 1
-        if atomic_number == 1:
-            count = 9 # no multiple bonds to H's, so ignore
-        heavy_atom_connectivity.append(count)
+def get_atom(atom):
+    global __ATOM_LIST__
+    atom = atom.lower()
+    return __ATOM_LIST__.index(atom) + 1
 
-    min_connectivity = min(heavy_atom_connectivity)
-    atoms_min_connectivity = []
-    for i,connectivity in enumerate(heavy_atom_connectivity):
-        if connectivity == min_connectivity:
-            atoms_min_connectivity.append(i)
 
-    return atoms_min_connectivity
+def getUA(maxValence_list, valence_list):
+    UA = []
+    DU = []
+    for i, (maxValence,valence) in enumerate(zip(maxValence_list, valence_list)):
+        if maxValence - valence > 0:
+            UA.append(i)
+            DU.append(maxValence - valence)
+    return UA,DU
 
 def get_atom(atom):
     global __ATOM_LIST__
@@ -60,50 +55,47 @@ def getUA(maxValence_list, valence_list):
     return UA,DU
 
 
-def get_BO(AC,UA_try,DU,valences):
+def get_BO(AC,UA,DU,valences,UA_pairs,quick):
     BO = AC.copy()
-    #BO_valence = list(BO.sum(axis=1))
-    #UA,DU = getUA(valences, BO_valence)
-    UA = list(UA_try)
+    DU_save = []
 
-    while len(DU) > 1:
-        UA_pairs = itertools.combinations(UA, 2)
-
+    while DU_save != DU:
         for i,j in UA_pairs:
-            if BO[i,j] > 0:
-                BO[i,j] += 1
-                BO[j,i] += 1
-                break
+            BO[i,j] += 1
+            BO[j,i] += 1
+            if not quick:
+                break 
         
         BO_valence = list(BO.sum(axis=1))
-        UA_new, DU_new = getUA(valences, BO_valence)
-
-        if DU_new != DU:
-            #UA = copy.copy(UA_new)
-            # change the order of UA_new elements to match that in UA_try
-            UA = [UA_i for UA_i in UA_try if UA_i in UA_new]
-            DU = copy.copy(DU_new)
-        else:
-            break
+        DU_save = copy.copy(DU)
+        UA, DU = getUA(valences, BO_valence)
+        UA_pairs = get_UA_pairs(UA,AC)[0]
 
     return BO
 
 
 def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList,charged_fragments):
 
-    q = 0
+    Q = 0 # total charge
+    q_list = []
     if charged_fragments:
         BO_valences = list(BO.sum(axis=1))
         for i,atom in enumerate(atomicNumList):
-            q += get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
+            q = get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
+            Q += q
             if atom == 6:
                 number_of_single_bonds_to_C = list(BO[i,:]).count(1)
                 if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
-                    q += 1
-                if number_of_single_bonds_to_C == 3 and q + 1 < charge:
-                    q += 2
+                    Q += 1
+                    q = 2
+                if number_of_single_bonds_to_C == 3 and Q + 1 < charge:
+                    Q += 2
+                    q = 1
+            
+            if q != 0:
+                q_list.append(q)
 
-    if (BO-AC).sum() == sum(DU) and charge == q:
+    if (BO-AC).sum() == sum(DU) and charge == Q and len(q_list) <= abs(charge):
         return True
     else:
         return False
@@ -124,10 +116,9 @@ def get_atomic_charge(atom,atomic_valence_electrons,BO_valence):
     return charge
 
 def clean_charges(mol):
-# this is a temporary hack. The real solution is to generate several BO matrices in AC2BO and pick the one
-# with the lowest number of atomic charges
+# this hack should not be needed any more but is kept just in case
 #
-    #print('clean_charges',Chem.MolToSmiles(mol))
+
     rxn_smarts = ['[N+:1]=[*:2]-[C-:3]>>[N+0:1]-[*:2]=[C-0:3]',
                   '[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
                   '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]',
@@ -150,8 +141,6 @@ def clean_charges(mol):
             mol = fragment
         else:
             mol = Chem.CombineMols(mol,fragment)
-
-    #print(Chem.MolToSmiles(mol))
 
     return mol
 
@@ -208,8 +197,9 @@ def set_atomic_charges(mol,atomicNumList,atomic_valence_electrons,BO_valences,BO
 
         if (abs(charge) > 0):
             a.SetFormalCharge(int(charge))
-    #rdmolops.SanitizeMol(mol)
-    mol = clean_charges(mol)
+
+    # shouldn't be needed anymore bit is kept just in case
+    #mol = clean_charges(mol)
 
     return mol
 
@@ -225,6 +215,33 @@ def set_atomic_radicals(mol,atomicNumList,atomic_valence_electrons,BO_valences):
 
     return mol
 
+def get_bonds(UA,AC):
+    bonds = []
+
+    for k,i in enumerate(UA):
+        for j in UA[k+1:]:
+            if AC[i,j] == 1:
+                bonds.append(tuple(sorted([i,j])))
+
+    return bonds
+
+def get_UA_pairs(UA,AC):
+    bonds = get_bonds(UA,AC)
+    if len(bonds) == 0:
+        return [()]
+
+    max_atoms_in_combo = 0
+    UA_pairs = [()]
+    for combo in list(itertools.combinations(bonds, int(len(UA)/2))):
+      flat_list = [item for sublist in combo for item in sublist]
+      atoms_in_combo = len(set(flat_list))
+      if atoms_in_combo > max_atoms_in_combo:
+        max_atoms_in_combo = atoms_in_combo
+        UA_pairs = [combo]
+      elif atoms_in_combo == max_atoms_in_combo:
+        UA_pairs.append(combo)
+
+    return UA_pairs
 
 def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
     # TODO
@@ -267,8 +284,6 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
 
     best_BO = AC.copy()
 
-    atoms_min_connectivity = get_atoms_min_connectivity(AC,atomicNumList)
-
 # implemenation of algorithm shown in Figure 2
 # UA: unsaturated atoms
 # DU: degree of unsaturation (u matrix in Figure)
@@ -278,30 +293,18 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
     for valences in valences_list:
         AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
-        if len(UA) == 0 or BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
-            best_BO = AC.copy()
-            break
-        
-        UA_atoms_min_connectivity = list(set(atoms_min_connectivity) & set(UA))
-        rest = list(set(UA)-set(UA_atoms_min_connectivity))
-        
-        if quick:
-            UA_atoms_min_connectivity_perm = [UA_atoms_min_connectivity + rest]
-        else:
-            UA_atoms_min_connectivity_perm = list(itertools.permutations(UA_atoms_min_connectivity))
 
-        UA_perm = [list(a) + rest for a in UA_atoms_min_connectivity_perm]
-
-        #print len(UA_perm)
-        #print UA, UA_perm
-        for UA_try in UA_perm:
-            BO = get_BO(AC,UA_try,DU_from_AC,valences)
+        if len(UA) == 0 and BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
+            return AC,atomic_valence_electrons
+        
+        UA_pairs_list = get_UA_pairs(UA,AC)
+        for UA_pairs in UA_pairs_list:
+            BO = get_BO(AC,UA,DU_from_AC,valences,UA_pairs,quick)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
-                best_BO = BO.copy()
-                is_best_BO = True
-                break
+                return BO,atomic_valence_electrons
+
             elif BO.sum() > best_BO.sum():
-                    best_BO = BO.copy()
+                best_BO = BO.copy()
 
         if is_best_BO:
             break
@@ -411,7 +414,8 @@ if __name__ == "__main__":
     
     filename = args.structure
     charged_fragments = True # alternatively radicals are made
-    quick = True # try only one combination of UA atoms in AC2BO
+
+    quick = False # True will work for most cases and is a little faster
 
     atomicNumList, charge, xyz_coordinates = read_xyz_file(filename)
 

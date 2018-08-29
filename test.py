@@ -20,14 +20,21 @@ if __name__ == "__main__":
     # code to test using SMILES instead of xyz file
     smiles_list = ['C=C([O-])CC','C=C([NH3+])CC','CC(=O)[O-]','C[N+](=O)[O-]','CS(CC)(=O)=O','CS([O-])(=O)=O',
                 'C=C(C)CC', 'CC(C)CC','C=C(N)CC','C=C(C)C=C','C#CC=C','c1ccccc1','c1ccccc1c1ccccc1',
-                '[NH3+]CS([O-])(=O)=O','CC(NC)=O','C[NH+]=C([O-])CC[NH+]=C([O-])C','C[NH+]=CC=C([O-])C',
-                "[C+](C)(C)CC[C-](C)(C)","[CH2][CH2][CH]=[CH][CH2]",'[O-]c1ccccc1','O=C(C=C1)C=CC1=CCC([O-])=O',
-                'O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','CNC(/C(C)=[NH+]/[CH-]CC(O)=O)=O']
-    #smiles_list = ['O=C(C=C1)C=CC1=CCC([O-])=O','O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','[O-]c1ccccc1']
-    #smiles_list = ['CC(Nc1ccc(O)cc1)=O']
-    #smiles_list = ['C#C']
+                '[NH3+]CS([O-])(=O)=O','CC(NC)=O','[O-]c1ccccc1','O=C(C=C1)C=CC1=CCC([O-])=O',
+                'C#CC#C','Cc1ccc(cc1)C1C=CC2C(C=CC2(C#N)C#N)=CC=1']
+    #smiles_list = ['C[NH+]=C([O-])CC[NH+]=C([O-])C','C[NH+]=CC=C([O-])C',
+    #            "[C+](C)(C)CC[C-](C)(C)",'O=C(C=C1)C=CC1=CCC([O-])=O',
+    #            'O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','[O-]c1ccccc1','CNC(/C(C)=[NH+]/[CH-]CC(O)=O)=O',"[CH2][CH2][CH]=[CH][CH2]"]
+    #smiles_list = ['Cc1ccc(cc1)C1C=CC2C(C=CC2(C#N)C#N)=CC=1']
+    #smiles_list = ['CC1C=CC2C(C=CC2(C)C)=CC=1']
+    #smiles_list = ['CC1=CC=C(C=CC2)C2C=C1']
+    #smiles_list = ['CC1=CC=C(C2=CC=CC=C2)C=C1']
+    #smiles_list = ['C1(CC2=CC=CC=C2)=CC=CC=C1']
+    #smiles_list = ['C#CC#C']
+    #smiles_list = ['C[N+](=O)[O-]']
 
     for smiles in smiles_list:
+        #print(smiles)
         mol = Chem.MolFromSmiles(smiles)
 
         Chem.Kekulize(mol, clearAromaticFlags = True)
