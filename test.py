@@ -8,6 +8,7 @@ if __name__ == "__main__":
 
     filename = "ethane.xyz"
     filename = "acetate.xyz"
+    filename = "chiral_stereo_test.xyz"
 
     charged_fragments = True
     quick = False
@@ -15,7 +16,7 @@ if __name__ == "__main__":
     atomicNumList,charge,xyz_coordinates = x2m.read_xyz_file(filename)
     mol = x2m.xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick)
 
-    print(Chem.MolToSmiles(mol))
+    print(Chem.MolToSmiles(mol, isomericSmiles=True))
 
     # code to test using SMILES instead of xyz file
     smiles_list = ['C=C([O-])CC','C=C([NH3+])CC','CC(=O)[O-]','C[N+](=O)[O-]','CS(CC)(=O)=O','CS([O-])(=O)=O',
