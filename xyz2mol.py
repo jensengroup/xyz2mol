@@ -276,23 +276,17 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
     for valences in valences_list:
         AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
-        if len(UA) == 0 or BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
-            best_BO = AC.copy()
-            break
+        if len(UA) == 0 and BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
+            return AC,atomic_valence_electrons
         
         UA_pairs_list = get_UA_pairs(UA,AC)
         for UA_pairs in UA_pairs_list:
             BO = get_BO(AC,UA,DU_from_AC,valences,UA_pairs,quick)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
                 return BO,atomic_valence_electrons
-                #best_BO = BO.copy()
-                #is_best_BO = True
-                #break
-            elif BO.sum() > best_BO.sum():
-                    best_BO = BO.copy()
 
-        #if is_best_BO:
-        #    break
+            elif BO.sum() > best_BO.sum():
+                best_BO = BO.copy()
 
     return best_BO,atomic_valence_electrons
 
