@@ -10,7 +10,7 @@ if __name__ == "__main__":
     filename = "acetate.xyz"
 
     charged_fragments = True
-    quick = True
+    quick = False
 
     atomicNumList,charge,xyz_coordinates = x2m.read_xyz_file(filename)
     mol = x2m.xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick)
@@ -31,10 +31,10 @@ if __name__ == "__main__":
     #smiles_list = ['CC1=CC=C(C2=CC=CC=C2)C=C1']
     #smiles_list = ['C1(CC2=CC=CC=C2)=CC=CC=C1']
     #smiles_list = ['C#CC#C']
-    #smiles_list = ['O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]']
+    #smiles_list = ['C[N+](=O)[O-]']
 
     for smiles in smiles_list:
-        print(smiles)
+        #print(smiles)
         mol = Chem.MolFromSmiles(smiles)
 
         Chem.Kekulize(mol, clearAromaticFlags = True)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         newmol = x2m.AC2mol(proto_mol,AC,atomicNumList,charge,charged_fragments,quick)
         #print Chem.MolToSmiles(newmol)
 
-        #newmol = Chem.RemoveHs(newmol)
+        newmol = Chem.RemoveHs(newmol)
         newmol_smiles = Chem.MolToSmiles(newmol)
         #print (newmol_smiles)
 
