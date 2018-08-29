@@ -391,6 +391,14 @@ def xyz2AC(atomicNumList,xyz):
 
     return AC,mol
 
+def chiral_stereo_check(mol):
+    Chem.SanitizeMol(mol)
+    Chem.DetectBondStereochemistry(mol,-1)
+    Chem.AssignStereochemistry(mol, flagPossibleStereoCenters=True, force=True)
+    Chem.AssignAtomChiralTagsFromStructure(mol,-1)
+
+    return mol
+
 def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick):
 
 # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge, 
@@ -399,6 +407,9 @@ def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick):
 
 # Convert AC to bond order matrix and add connectivity and charge info to mol object
     new_mol = AC2mol(mol,AC,atomicNumList,charge,charged_fragments,quick)
+
+# Check for stereocenters and chiral centers
+    new_mol = chiral_stereo_check(new_mol)
 
     return new_mol
 
@@ -428,8 +439,8 @@ if __name__ == "__main__":
         writer.write(mol)
 
     # Canonical hack
-    smiles = Chem.MolToSmiles(mol)
+    smiles = Chem.MolToSmiles(mol, isomericSmiles=True)
     m = Chem.MolFromSmiles(smiles)
-    smiles = Chem.MolToSmiles(m)
+    smiles = Chem.MolToSmiles(m, isomericSmiles=True)
 
     print(smiles)
