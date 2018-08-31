@@ -211,7 +211,7 @@ def set_atomic_radicals(mol,atomicNumList,atomic_valence_electrons,BO_valences):
         charge = get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
 
         if (abs(charge) > 0):
-            a.SetNumRadicalElectrons(abs(charge))
+            a.SetNumRadicalElectrons(abs(int(charge)))
 
     return mol
 
