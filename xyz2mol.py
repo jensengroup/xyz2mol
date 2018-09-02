@@ -24,20 +24,6 @@ __ATOM_LIST__ = [ x.strip() for x in ['h ','he', \
       'au','hg','tl','pb','bi','po','at','rn', \
       'fr','ra','ac','th','pa','u ','np','pu'] ]
 
-def get_atom(atom):
-    global __ATOM_LIST__
-    atom = atom.lower()
-    return __ATOM_LIST__.index(atom) + 1
-
-
-def getUA(maxValence_list, valence_list):
-    UA = []
-    DU = []
-    for i, (maxValence,valence) in enumerate(zip(maxValence_list, valence_list)):
-        if maxValence - valence > 0:
-            UA.append(i)
-            DU.append(maxValence - valence)
-    return UA,DU
 
 def get_atom(atom):
     global __ATOM_LIST__
@@ -62,20 +48,26 @@ def get_BO(AC,UA,DU,valences,UA_pairs,quick):
     while DU_save != DU:
         for i,j in UA_pairs:
             BO[i,j] += 1
-            BO[j,i] += 1
-            if not quick:
-                break 
+            BO[j,i] += 1 
         
         BO_valence = list(BO.sum(axis=1))
         DU_save = copy.copy(DU)
         UA, DU = getUA(valences, BO_valence)
-        UA_pairs = get_UA_pairs(UA,AC)[0]
+        UA_pairs = get_UA_pairs(UA,AC,quick)[0]
 
     return BO
 
 
-def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList,charged_fragments):
+def valences_not_too_large(BO,valences):
+    number_of_bonds_list = BO.sum(axis=1)
+    for valence, number_of_bonds in zip(valences,number_of_bonds_list):
+        if number_of_bonds > valence:
+            return False
 
+    return True
+
+
+def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList,charged_fragments):
     Q = 0 # total charge
     q_list = []
     if charged_fragments:
@@ -129,14 +121,12 @@ def clean_charges(mol):
     fragments = Chem.GetMolFrags(mol,asMols=True,sanitizeFrags=False)
 
     for i,fragment in enumerate(fragments):
-        #print(Chem.MolToSmiles(fragment))
         for smarts in rxn_smarts:
             patt = Chem.MolFromSmarts(smarts.split(">>")[0])
             while fragment.HasSubstructMatch(patt):
                 rxn = AllChem.ReactionFromSmarts(smarts)
                 ps = rxn.RunReactants((fragment,))
                 fragment = ps[0][0]
-                #print(smarts,Chem.MolToSmiles(fragment))
         if i == 0:
             mol = fragment
         else:
@@ -225,7 +215,7 @@ def get_bonds(UA,AC):
 
     return bonds
 
-def get_UA_pairs(UA,AC):
+def get_UA_pairs(UA,AC,quick):
     bonds = get_bonds(UA,AC)
     if len(bonds) == 0:
         return [()]
@@ -233,13 +223,15 @@ def get_UA_pairs(UA,AC):
     max_atoms_in_combo = 0
     UA_pairs = [()]
     for combo in list(itertools.combinations(bonds, int(len(UA)/2))):
-      flat_list = [item for sublist in combo for item in sublist]
-      atoms_in_combo = len(set(flat_list))
-      if atoms_in_combo > max_atoms_in_combo:
-        max_atoms_in_combo = atoms_in_combo
-        UA_pairs = [combo]
-      elif atoms_in_combo == max_atoms_in_combo:
-        UA_pairs.append(combo)
+        flat_list = [item for sublist in combo for item in sublist]
+        atoms_in_combo = len(set(flat_list))
+        if atoms_in_combo > max_atoms_in_combo:
+            max_atoms_in_combo = atoms_in_combo
+            UA_pairs = [combo]
+            if quick and max_atoms_in_combo == 2*int(len(UA)/2):
+                return UA_pairs
+        elif atoms_in_combo == max_atoms_in_combo:
+            UA_pairs.append(combo)
 
     return UA_pairs
 
@@ -289,7 +281,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
 # DU: degree of unsaturation (u matrix in Figure)
 # best_BO: Bcurr in Figure 
 #
-    is_best_BO = False
+
     for valences in valences_list:
         AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
@@ -297,17 +289,14 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
         if len(UA) == 0 and BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
             return AC,atomic_valence_electrons
         
-        UA_pairs_list = get_UA_pairs(UA,AC)
+        UA_pairs_list = get_UA_pairs(UA,AC,quick) 
         for UA_pairs in UA_pairs_list:
             BO = get_BO(AC,UA,DU_from_AC,valences,UA_pairs,quick)
             if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
                 return BO,atomic_valence_electrons
 
-            elif BO.sum() > best_BO.sum():
+            elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO,valences):
                 best_BO = BO.copy()
-
-        if is_best_BO:
-            break
 
     return best_BO,atomic_valence_electrons
 
