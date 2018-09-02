@@ -11,7 +11,7 @@ if __name__ == "__main__":
     filename = "chiral_stereo_test.xyz"
 
     charged_fragments = True
-    quick = False
+    quick = True
 
     atomicNumList,charge,xyz_coordinates = x2m.read_xyz_file(filename)
     mol = x2m.xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick)
@@ -25,14 +25,16 @@ if __name__ == "__main__":
                 'C#CC#C','Cc1ccc(cc1)C1C=CC2C(C=CC2(C#N)C#N)=CC=1']
     #smiles_list = ['C[NH+]=C([O-])CC[NH+]=C([O-])C','C[NH+]=CC=C([O-])C',
     #            "[C+](C)(C)CC[C-](C)(C)",'O=C(C=C1)C=CC1=CCC([O-])=O',
-    #            'O=C([CH-]/C=C/C(C([O-])=O)=O)[O-]','[O-]c1ccccc1','CNC(/C(C)=[NH+]/[CH-]CC(O)=O)=O',"[CH2][CH2][CH]=[CH][CH2]"]
+    #            'O=C([CH-]C=CC(C([O-])=O)=O)[O-]','[O-]c1ccccc1','CNC(C(C)=[NH+][CH-]CC(O)=O)=O',"[CH2][CH2][CH]=[CH][CH2]"]
     #smiles_list = ['Cc1ccc(cc1)C1C=CC2C(C=CC2(C#N)C#N)=CC=1']
     #smiles_list = ['CC1C=CC2C(C=CC2(C)C)=CC=1']
     #smiles_list = ['CC1=CC=C(C=CC2)C2C=C1']
     #smiles_list = ['CC1=CC=C(C2=CC=CC=C2)C=C1']
     #smiles_list = ['C1(CC2=CC=CC=C2)=CC=CC=C1']
-    #smiles_list = ['C#CC#C']
+    #smiles_list = ['[O-]c1ccccc1[O-]']
     #smiles_list = ['C[N+](=O)[O-]']
+    smiles_list = ['N#CC(C#N)=CC=C1C=CC=CC(=C1)c1ccc(cc1)[N+](=O)[O-]']
+    #smiles_list = ['CNC([O-])=C([NH+]=C/CC(O)=O)C']
 
     for smiles in smiles_list:
         #print(smiles)
