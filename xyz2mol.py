@@ -9,6 +9,7 @@ import itertools
 from rdkit.Chem import rdmolops
 from collections import defaultdict
 import copy
+import networkx as nx #uncomment if you don't want to use "quick"/install networkx
 
 
 global __ATOM_LIST__
@@ -220,6 +221,12 @@ def get_UA_pairs(UA,AC,quick):
     if len(bonds) == 0:
         return [()]
 
+    if quick:
+        G=nx.Graph()
+        G.add_edges_from(bonds)
+        UA_pairs = [list(nx.max_weight_matching(G))]
+        return UA_pairs
+
     max_atoms_in_combo = 0
     UA_pairs = [()]
     for combo in list(itertools.combinations(bonds, int(len(UA)/2))):
@@ -228,8 +235,8 @@ def get_UA_pairs(UA,AC,quick):
         if atoms_in_combo > max_atoms_in_combo:
             max_atoms_in_combo = atoms_in_combo
             UA_pairs = [combo]
-            if quick and max_atoms_in_combo == 2*int(len(UA)/2):
-                return UA_pairs
+ #           if quick and max_atoms_in_combo == 2*int(len(UA)/2):
+ #               return UA_pairs
         elif atoms_in_combo == max_atoms_in_combo:
             UA_pairs.append(combo)
 
@@ -415,7 +422,10 @@ if __name__ == "__main__":
     filename = args.structure
     charged_fragments = True # alternatively radicals are made
 
-    quick = False # True will work for most cases and is a little faster
+    # quick is faster for large systems but requires networkx
+    # if you don't want to install networkx set quick=False and 
+    # uncomment 'import networkx as nx' at the top of the file 
+    quick = True 
 
     atomicNumList, charge, xyz_coordinates = read_xyz_file(filename)
 
