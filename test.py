@@ -33,7 +33,7 @@ if __name__ == "__main__":
     #smiles_list = ['C1(CC2=CC=CC=C2)=CC=CC=C1']
     #smiles_list = ['[O-]c1ccccc1[O-]']
     #smiles_list = ['C[N+](=O)[O-]']
-    smiles_list = ['N#CC(C#N)=CC=C1C=CC=CC(=C1)c1ccc(cc1)[N+](=O)[O-]']
+    #smiles_list = ['N#CC(C#N)=CC=C1C=CC=CC(=C1)c1ccc(cc1)[N+](=O)[O-]']
     #smiles_list = ['CNC([O-])=C([NH+]=C/CC(O)=O)C']
 
     for smiles in smiles_list:
