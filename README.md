@@ -10,4 +10,4 @@ usage: type "python xyz2mol.py xxx.xyz"
 
 Dependencies: [networkx](https://networkx.github.io/)
 
-You can remove this dependency by setting quick=False and uncommenting the import statement at the top of the xyz2mol.py
+You can remove this dependency by setting quick=False and uncommenting the import statement at the top of xyz2mol.py
