@@ -279,7 +279,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
         valences_list_of_lists.append(atomic_valence[atomicNum])
 
 # convert [[4],[2,1]] to [[4,2],[4,1]]
-    valences_list = list(itertools.product(*valences_list_of_lists))
+    valences_list = itertools.product(*valences_list_of_lists)
 
     best_BO = AC.copy()
 
