@@ -12,6 +12,5 @@ env:
 pip: env
 	${PYTHON} -m pip install -r requirements.txt --no-cache-dir
 
-
 test:
-	${PYTHON} -m pytest test.py
+	${PYTHON} -m pytest -v test.py
