@@ -91,14 +91,14 @@ def valences_not_too_large(BO,valences):
     return True
 
 
-def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList,charged_fragments):
+def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons, atoms,charged_fragments):
     """
     """
     Q = 0 # total charge
     q_list = []
     if charged_fragments:
         BO_valences = list(BO.sum(axis=1))
-        for i,atom in enumerate(atomicNumList):
+        for i,atom in enumerate(atoms):
             q = get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
             Q += q
             if atom == 6:
@@ -166,17 +166,17 @@ def clean_charges(mol):
     return mol
 
 
-def BO2mol(mol,BO_matrix, atomicNumList,atomic_valence_electrons,mol_charge,charged_fragments):
+def BO2mol(mol,BO_matrix, atoms,atomic_valence_electrons,mol_charge,charged_fragments):
     """
     based on code written by Paolo Toscani
     """
 
     l = len(BO_matrix)
-    l2 = len(atomicNumList)
+    l2 = len(atoms)
     BO_valences = list(BO_matrix.sum(axis=1))
 
     if (l != l2):
-        raise RuntimeError('sizes of adjMat ({0:d}) and atomicNumList '
+        raise RuntimeError('sizes of adjMat ({0:d}) and Atoms '
             '{1:d} differ'.format(l, l2))
 
     rwMol = Chem.RWMol(mol)
@@ -197,17 +197,17 @@ def BO2mol(mol,BO_matrix, atomicNumList,atomic_valence_electrons,mol_charge,char
     mol = rwMol.GetMol()
 
     if charged_fragments:
-        mol = set_atomic_charges(mol,atomicNumList,atomic_valence_electrons,BO_valences,BO_matrix,mol_charge)
+        mol = set_atomic_charges(mol, atoms,atomic_valence_electrons,BO_valences,BO_matrix,mol_charge)
     else:
-        mol = set_atomic_radicals(mol,atomicNumList,atomic_valence_electrons,BO_valences)
+        mol = set_atomic_radicals(mol, atoms,atomic_valence_electrons,BO_valences)
 
     return mol
 
-def set_atomic_charges(mol,atomicNumList,atomic_valence_electrons,BO_valences,BO_matrix,mol_charge):
+def set_atomic_charges(mol, atoms,atomic_valence_electrons,BO_valences,BO_matrix,mol_charge):
     """
     """
     q = 0
-    for i,atom in enumerate(atomicNumList):
+    for i,atom in enumerate(atoms):
         a = mol.GetAtomWithIdx(i)
         charge = get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
         q += charge
@@ -226,13 +226,13 @@ def set_atomic_charges(mol,atomicNumList,atomic_valence_electrons,BO_valences,BO
     return mol
 
 
-def set_atomic_radicals(mol,atomicNumList,atomic_valence_electrons,BO_valences):
+def set_atomic_radicals(mol, atoms,atomic_valence_electrons,BO_valences):
     """
 
     The number of radical electrons = absolute atomic charge
 
     """
-    for i,atom in enumerate(atomicNumList):
+    for i,atom in enumerate(atoms):
         a = mol.GetAtomWithIdx(i)
         charge = get_atomic_charge(atom,atomic_valence_electrons[atom],BO_valences[i])
 
@@ -285,7 +285,7 @@ def get_UA_pairs(UA, AC, quick, use_graph=True):
 
     return UA_pairs
 
-def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
+def AC2BO(AC,atoms,charge,charged_fragments,quick):
     """
     """
     # TODO
@@ -320,7 +320,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
 
     # make a list of valences, e.g. for CO: [[4],[2,1]]
     valences_list_of_lists = []
-    for atomicNum in atomicNumList:
+    for atomicNum in atoms:
         valences_list_of_lists.append(atomic_valence[atomicNum])
 
     # convert [[4],[2,1]] to [[4,2],[4,1]]
@@ -337,13 +337,13 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
         AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
 
-        if len(UA) == 0 and BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
+        if len(UA) == 0 and BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atoms,charged_fragments):
             return AC,atomic_valence_electrons
 
         UA_pairs_list = get_UA_pairs(UA,AC,quick) 
         for UA_pairs in UA_pairs_list:
             BO = get_BO(AC,UA,DU_from_AC,valences,UA_pairs,quick)
-            if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
+            if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atoms,charged_fragments):
                 return BO,atomic_valence_electrons
 
             elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO,valences):
@@ -352,26 +352,26 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
     return best_BO,atomic_valence_electrons
 
 
-def AC2mol(mol,AC,atomicNumList,charge,charged_fragments,quick):
+def AC2mol(mol,AC,atoms,charge,charged_fragments,quick):
     """
     """
 
     # convert AC matrix to bond order (BO) matrix
-    BO,atomic_valence_electrons = AC2BO(AC,atomicNumList,charge,charged_fragments,quick)
+    BO,atomic_valence_electrons = AC2BO(AC,atoms,charge,charged_fragments,quick)
 
     # add BO connectivity and charge info to mol object
-    mol = BO2mol(mol,BO, atomicNumList,atomic_valence_electrons,charge,charged_fragments)
+    mol = BO2mol(mol,BO, atoms,atomic_valence_electrons,charge,charged_fragments)
 
     return mol
 
 
-def get_proto_mol(atomicNumList):
+def get_proto_mol(atoms):
     """
     """
-    mol = Chem.MolFromSmarts("[#"+str(atomicNumList[0])+"]")
+    mol = Chem.MolFromSmarts("[#"+str(atoms[0])+"]")
     rwMol = Chem.RWMol(mol)
-    for i in range(1,len(atomicNumList)):
-        a = Chem.Atom(atomicNumList[i])
+    for i in range(1,len(atoms)):
+        a = Chem.Atom(atoms[i])
         rwMol.AddAtom(a)
     
     mol = rwMol.GetMol()
@@ -407,10 +407,10 @@ def read_xyz_file(filename, look_for_charge=True):
 
     return atoms, charge, xyz_coordinates
 
-def xyz2AC(atomicNumList,xyz):
+def xyz2AC(atoms,xyz):
     """
     """
-    mol = get_proto_mol(atomicNumList)
+    mol = get_proto_mol(atoms)
 
     conf = Chem.Conformer(mol.GetNumAtoms())
     for i in range(mol.GetNumAtoms()):
@@ -420,7 +420,7 @@ def xyz2AC(atomicNumList,xyz):
     dMat = Chem.Get3DDistanceMatrix(mol)
     pt = Chem.GetPeriodicTable()
 
-    num_atoms = len(atomicNumList)
+    num_atoms = len(atoms)
     AC = np.zeros((num_atoms,num_atoms)).astype(int)
 
     for i in range(num_atoms):
@@ -445,16 +445,16 @@ def chiral_stereo_check(mol):
 
     return mol
 
-def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick):
+def xyz2mol(atoms,charge,xyz_coordinates,charged_fragments,quick):
     """
     """
 
     # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge, 
     # and mol object with no connectivity information
-    AC,mol = xyz2AC(atomicNumList,xyz_coordinates)
+    AC,mol = xyz2AC(atoms,xyz_coordinates)
 
     # Convert AC to bond order matrix and add connectivity and charge info to mol object
-    new_mol = AC2mol(mol,AC,atomicNumList,charge,charged_fragments,quick)
+    new_mol = AC2mol(mol,AC,atoms,charge,charged_fragments,quick)
 
     # Check for stereocenters and chiral centers
     new_mol = chiral_stereo_check(new_mol)
@@ -489,9 +489,9 @@ if __name__ == "__main__":
     # uncomment 'import networkx as nx' at the top of the file 
     quick = True 
 
-    atomicNumList, charge, xyz_coordinates = read_xyz_file(filename)
+    atoms, charge, xyz_coordinates = read_xyz_file(filename)
 
-    mol = xyz2mol(atomicNumList, charge, xyz_coordinates, charged_fragments, quick)
+    mol = xyz2mol(atoms, charge, xyz_coordinates, charged_fragments, quick)
 
     if args.sdf:
         filename = filename.replace(".xyz", "")
