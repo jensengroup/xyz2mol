@@ -25,6 +25,16 @@ __ATOM_LIST__ = [ x.strip() for x in ['h ','he', \
       'au','hg','tl','pb','bi','po','at','rn', \
       'fr','ra','ac','th','pa','u ','np','pu'] ]
 
+def str_atom(atom):
+    global __ATOM_LIST__
+    atom = __ATOM_LIST__[atom-1]
+    return atom
+
+def int_atom(atom):
+    global __ATOM_LIST__
+    atom = atom.lower()
+    return __ATOM_LIST__.index(atom) + 1
+
 
 def get_atom(atom):
     global __ATOM_LIST__
@@ -337,7 +347,10 @@ def get_atomicNumList(atomic_symbols):
     return atomicNumList
 
 
-def read_xyz_file(filename):
+def read_xyz_file(filename, look_for_charge=True):
+    """
+    TODO rewrite this
+    """
 
     atomic_symbols = []
     xyz_coordinates = []
