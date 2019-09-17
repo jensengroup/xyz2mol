@@ -22,17 +22,18 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, rdmolops
 
 global __ATOM_LIST__
-__ATOM_LIST__ = [x.strip() for x in ['h ', 'he',
-                                     'li', 'be', 'b ', 'c ', 'n ', 'o ', 'f ', 'ne',
-                                     'na', 'mg', 'al', 'si', 'p ', 's ', 'cl', 'ar',
-                                     'k ', 'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu',
-                                     'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr',
-                                     'rb', 'sr', 'y ', 'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag',
-                                     'cd', 'in', 'sn', 'sb', 'te', 'i ', 'xe',
-                                     'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy',
-                                     'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w ', 're', 'os', 'ir', 'pt',
-                                     'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn',
-                                     'fr', 'ra', 'ac', 'th', 'pa', 'u ', 'np', 'pu']]
+__ATOM_LIST__ = \
+    ['h',  'he',
+     'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne',
+     'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar',
+     'k',  'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu',
+     'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr',
+     'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag',
+     'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe',
+     'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy',
+     'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w',  're', 'os', 'ir', 'pt',
+     'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn',
+     'fr', 'ra', 'ac', 'th', 'pa', 'u',  'np', 'pu']
 
 
 def str_atom(atom):
@@ -57,9 +58,10 @@ def getUA(maxValence_list, valence_list):
     UA = []
     DU = []
     for i, (maxValence, valence) in enumerate(zip(maxValence_list, valence_list)):
-        if maxValence - valence > 0:
-            UA.append(i)
-            DU.append(maxValence - valence)
+        if not maxValence - valence > 0:
+            continue
+        UA.append(i)
+        DU.append(maxValence - valence)
     return UA, DU
 
 
@@ -249,7 +251,9 @@ def set_atomic_radicals(mol, atoms, atomic_valence_electrons, BO_valences):
     for i, atom in enumerate(atoms):
         a = mol.GetAtomWithIdx(i)
         charge = get_atomic_charge(
-            atom, atomic_valence_electrons[atom], BO_valences[i])
+            atom,
+            atomic_valence_electrons[atom],
+            BO_valences[i])
 
         if (abs(charge) > 0):
             a.SetNumRadicalElectrons(abs(int(charge)))
@@ -436,8 +440,11 @@ def read_xyz_file(filename, look_for_charge=True):
 def xyz2AC(atoms, xyz):
     """
     """
+
+    # Get mol template
     mol = get_proto_mol(atoms)
 
+    # Set coordinates
     conf = Chem.Conformer(mol.GetNumAtoms())
     for i in range(mol.GetNumAtoms()):
         conf.SetAtomPosition(i, (xyz[i][0], xyz[i][1], xyz[i][2]))
@@ -447,7 +454,7 @@ def xyz2AC(atoms, xyz):
     pt = Chem.GetPeriodicTable()
 
     num_atoms = len(atoms)
-    AC = np.zeros((num_atoms, num_atoms)).astype(int)
+    AC = np.zeros((num_atoms, num_atoms), dtype=int)
 
     for i in range(num_atoms):
         a_i = mol.GetAtomWithIdx(i)
@@ -473,23 +480,36 @@ def chiral_stereo_check(mol):
     return mol
 
 
-def xyz2mol(atoms, charge, xyz_coordinates, charged_fragments, quick):
+def xyz2mol(atoms, coordinates, charge=0, allow_charged_fragments=True, use_graph=True):
     """
+    Generate a rdkit molobj from atoms, coordinates and a total_charge.
+
+    args:
+        atoms - list of atom types (int)
+        coordinates - 3xN Cartesian coordinates
+        charge - total charge of the system (default: 0)
+
+    optional:
+        allow_charged_fragments - alternatively radicals are made
+        use_graph - use graph (networkx)
+
+    returns:
+        mol - rdkit molobj
+
     """
 
     # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge,
     # and mol object with no connectivity information
-    AC, mol = xyz2AC(atoms, xyz_coordinates)
+    AC, mol = xyz2AC(atoms, coordinates)
 
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
-    new_mol = AC2mol(mol, AC, atoms, charge, charged_fragments, quick)
+    new_mol = AC2mol(mol, AC, atoms, charge, allow_charged_fragments, use_graph)
 
     # Check for stereocenters and chiral centers
     new_mol = chiral_stereo_check(new_mol)
 
     return new_mol
-
 
 if __name__ == "__main__":
 
@@ -516,7 +536,7 @@ if __name__ == "__main__":
         help="Run xyz2mol without networkx dependencies")
     parser.add_argument(
         '-o',
-        '--output_format',
+        '--output-format',
         action="store",
         type=str,
         help="Output format [smiles,sdf] (default=sdf)")
@@ -541,17 +561,16 @@ if __name__ == "__main__":
 
     atoms, charge, xyz_coordinates = read_xyz_file(filename)
 
-    mol = xyz2mol(atoms, charge, xyz_coordinates, charged_fragments, quick)
+    mol = xyz2mol(atoms, xyz_coordinates, charge=charge, use_graph=quick, allow_charged_fragments=charged_fragments)
 
-    if args.sdf:
-        filename = filename.replace(".xyz", "")
-        filename += ".sdf"
-        writer = Chem.SDWriter(filename)
-        writer.write(mol)
+    if args.output_format == "sdf":
+        txt = Chem.MolToMolBlock(mol)
+        print(txt)
 
-    # Canonical hack
-    smiles = Chem.MolToSmiles(mol, isomericSmiles=True)
-    m = Chem.MolFromSmiles(smiles)
-    smiles = Chem.MolToSmiles(m, isomericSmiles=True)
-
-    print(smiles)
+    else:
+        # Canonical hack
+        isomeric_smiles = not args.ignore_chiral
+        smiles = Chem.MolToSmiles(mol, isomericSmiles=isomeric_smiles)
+        m = Chem.MolFromSmiles(smiles)
+        smiles = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
+        print(smiles)
