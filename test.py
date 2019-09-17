@@ -28,7 +28,24 @@ __TEST_SMILES__ = [
     '[O-]c1ccccc1',
     'O=C(C=C1)C=CC1=CCC([O-])=O',
     'C#CC#C',
-    'Cc1ccc(cc1)C1C=CC2C(C=CC2(C#N)C#N)=CC=1'
+    'Cc1ccc(cc1)C1C=CC2C(C=CC2(C#N)C#N)=CC=1',
+    # 'C[NH+]=C([O-])CC[NH+]=C([O-])C',
+    # 'C[NH+]=CC=C([O-])C',
+    '[C+](C)(C)CC[C-](C)(C)',
+    'O=C(C=C1)C=CC1=CCC([O-])=O',
+    # 'O=C([CH-]C=CC(C([O-])=O)=O)[O-]',
+    '[O-]c1ccccc1',
+    # 'CNC(C(C)=[NH+][CH-]CC(O)=O)=O',
+    # "[CH2][CH2][CH]=[CH][CH2]",
+    'Cc1ccc(cc1)C1C=CC2C(C=CC2(C#N)C#N)=CC=1',
+    'CC1C=CC2C(C=CC2(C)C)=CC=1',
+    'CC1=CC=C(C=CC2)C2C=C1',
+    'CC1=CC=C(C2=CC=CC=C2)C=C1',
+    'C1(CC2=CC=CC=C2)=CC=CC=C1',
+    '[O-]c1ccccc1[O-]',
+    'C[N+](=O)[O-]',
+    'N#CC(C#N)=CC=C1C=CC=CC(=C1)c1ccc(cc1)[N+](=O)[O-]',
+    'CNC([O-])=C([NH+]=C/CC(O)=O)C',
 ]
 
 __TEST_FILES__ = [
@@ -116,7 +133,7 @@ def test_smiles_from_coord(smiles):
     atoms, coordinates = generate_structure_from_smiles(smiles)
 
     # Generate molobj from atoms, charge and coordinates
-    mol = x2m.xyz2mol(atoms, charge, coordinates, charged_fragments, quick)
+    mol = x2m.xyz2mol(atoms, coordinates, charge=charge)
 
     # For this test, remove chira. clean and canonical
     Chem.Kekulize(mol)
@@ -142,7 +159,7 @@ def test_smiles_from_xyz_files(filename, charge, answer):
     atoms, coordinates = rmsd.get_coordinates_xyz(filename)
     atoms = [x2m.int_atom(atom) for atom in atoms]
 
-    mol = x2m.xyz2mol(atoms, charge, coordinates, charged_fragments, quick)
+    mol = x2m.xyz2mol(atoms, coordinates, charge=charge)
     mol = Chem.RemoveHs(mol)
 
     smiles = Chem.MolToSmiles(mol)
