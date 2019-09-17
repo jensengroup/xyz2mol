@@ -563,42 +563,35 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(usage='%(prog)s [options] molecule.xyz')
     parser.add_argument('structure', metavar='structure', type=str)
-    parser.add_argument(
-        '-s',
-        '--sdf',
+    parser.add_argument('-s', '--sdf',
         action="store_true",
         help="Dump sdf file")
-    parser.add_argument(
-        '--ignore-chiral',
+    parser.add_argument('--ignore-chiral',
         action="store_true",
         help="Ignore chiral centers")
-    parser.add_argument(
-        '--ignore-charged-fragments',
+    parser.add_argument('--ignore-charged-fragments',
         action="store_true",
         help="Allow radicals to be made")
-    parser.add_argument(
-        '--not-quick',
+    parser.add_argument('--not-quick',
         action="store_true",
         help="Run xyz2mol without networkx dependencies")
-    parser.add_argument(
-        '-o',
-        '--output-format',
+    parser.add_argument('-o', '--output-format',
         action="store",
         type=str,
         help="Output format [smiles,sdf] (default=sdf)")
-    parser.add_argument(
-        '-c',
-        '--charge',
+    parser.add_argument('-c', '--charge',
         action="store",
         metavar="int",
         type=int,
-        default=0,
         help="Total charge of the system")
 
     args = parser.parse_args()
 
+    # read xyz file
     filename = args.structure
-    charged_fragments = True  # alternatively radicals are made
+
+    # allow for charged fragments, alternatively radicals are made
+    charged_fragments = True
 
     # quick is faster for large systems but requires networkx
     # if you don't want to install networkx set quick=False and
@@ -608,14 +601,21 @@ if __name__ == "__main__":
     # chiral comment
     embed_chiral = not args.ignore_chiral
 
+    # read atoms and coordinates. Try to find the charge
     atoms, charge, xyz_coordinates = read_xyz_file(filename)
 
+    # if explicit charge from args, set it
+    if args.charge is not None:
+        charge = int(args.charge)
+
+    # Get the molobj
     mol = xyz2mol(atoms, xyz_coordinates,
         charge=charge,
         use_graph=quick,
         allow_charged_fragments=charged_fragments,
         embed_chiral=embed_chiral)
 
+    # Print output
     if args.output_format == "sdf":
         txt = Chem.MolToMolBlock(mol)
         print(txt)
