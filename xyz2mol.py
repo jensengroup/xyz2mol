@@ -224,17 +224,17 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
     rdkit molecule.
 
     args:
-        mol - 
-        BO_matrix - 
-        atoms - 
+        mol - rdkit molecule
+        BO_matrix - bond order matrix of molecule
+        atoms - list of integer atomic symbols
         atomic_valence_electrons -
-        mol_charge - 
+        mol_charge - total charge of molecule
 
     optional:
-        allow_charged_fragments - 
+        allow_charged_fragments - bool - allow charged fragments
 
     returns
-        mol -
+        mol - updated rdkit molecule with bond connectivity
 
     """
 
@@ -447,11 +447,11 @@ def get_proto_mol(atoms):
 
 def read_xyz_file(filename, look_for_charge=True):
     """
-    TODO rewrite this
     """
 
     atomic_symbols = []
     xyz_coordinates = []
+    charge = 0
     title = ""
 
     with open(filename, "r") as file:
@@ -462,8 +462,6 @@ def read_xyz_file(filename, look_for_charge=True):
                 title = line
                 if "charge=" in line:
                     charge = int(line.split("=")[1])
-                else:
-                    charge = 0
             else:
                 atomic_symbol, x, y, z = line.split()
                 atomic_symbols.append(atomic_symbol)
