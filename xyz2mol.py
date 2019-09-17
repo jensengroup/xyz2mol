@@ -394,8 +394,15 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
         AC_valence = list(AC.sum(axis=1))
         UA, DU_from_AC = get_UA(valences, AC_valence)
 
-        if len(UA) == 0 and BO_is_OK(AC, AC, charge, DU_from_AC,
-                                     atomic_valence_electrons, atoms, allow_charged_fragments=allow_charged_fragments):
+        check_len = (len(UA) == 0)
+        if check_len:
+            check_bo = BO_is_OK(AC, AC, charge, DU_from_AC,
+                atomic_valence_electrons, atoms,
+                allow_charged_fragments=allow_charged_fragments)
+        else:
+            check_bo = None
+
+        if check_len and check_bo:
             return AC, atomic_valence_electrons
 
         UA_pairs_list = get_UA_pairs(UA, AC, use_graph=use_graph)
