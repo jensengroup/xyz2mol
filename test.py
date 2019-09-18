@@ -83,13 +83,6 @@ def generate_structure_from_smiles(smiles):
 
     return atoms, coordinates
 
-def get_mol_skeleton(mol):
-
-    atoms = get_atoms(mol)
-    adjacent_matrix = Chem.GetAdjacencyMatrix(mol)
-
-    return proto_mol, adjacent_matrix
-
 @pytest.mark.parametrize("smiles", __TEST_SMILES__)
 def test_smiles_from_adjacent_matrix(smiles):
 
