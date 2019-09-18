@@ -9,11 +9,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python 3.7
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.7
-    - name: Setup conda enviroment
+    - name: Set up Python and Conda enviroment
       run: |
         conda update -n base -c defaults conda
         conda env create -f requirements.yml -p env
@@ -22,6 +18,7 @@ jobs:
         which pip
     - name: Install dependencies
       run: |
+        which pip
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Lint with flake8
@@ -31,7 +28,9 @@ jobs:
         flake8 *.py --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 *.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        which flake8
     - name: Test with pytest
       run: |
+        which pytest
         pip install pytest
         pytest test.py
