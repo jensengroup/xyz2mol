@@ -15,8 +15,10 @@ jobs:
         python-version: 3.7
     - name: Setup conda enviroment
       run: |
+        conda update -n base -c defaults conda
         conda env create -f requirements.yml -p env
-        conda activate env
+        source $(conda info --root)/etc/profile.d/conda.sh
+        conda activate ./env
         which pip
     - name: Install dependencies
       run: |
