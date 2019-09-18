@@ -1,4 +1,4 @@
-name: Python application
+name: Conda/Python pytest
 
 on: [push]
 
@@ -14,7 +14,7 @@ jobs:
       with:
         python-version: 3.7
     - name: Setup conda enviroment
-        run: |
+      run: |
         conda env create -f requirements.yml -p env
         activate env
     - name: Install dependencies
