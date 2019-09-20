@@ -10,6 +10,8 @@ from rdkit.Chem import AllChem
 import xyz2mol as x2m
 
 __TEST_SMILES__ = [
+    'C[C-](c1ccccc1)C',
+    'C[C-](C)c1ccccc1',
     'C=C([O-])CC',
     'C=C([NH3+])CC',
     'CC(=O)[O-]',
@@ -52,6 +54,7 @@ __TEST_FILES__ = [
     ("examples/ethane.xyz", 0, "CC"),
     ("examples/acetate.xyz", -1, "CC(=O)[O-]"),
     ("examples/chiral_stereo_test.xyz", 0, "C/C=C/[C@@H](C)F"),
+    ("examples/propylbenzene.xyz", -1, "C[C-](C)c1ccccc1"),
 ]
 
 def get_atoms(mol):
@@ -163,6 +166,12 @@ def test_smiles_from_xyz_files(filename, charge, answer):
 
 
 if __name__ == "__main__":
+
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--test-type', type=str, help="")
+    parser.add_argument('-s', '--smiles', help="")
+    args = parser.parse_args()
 
     for smiles in __TEST_SMILES__:
         test_smiles_from_adjacent_matrix(smiles)
