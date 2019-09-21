@@ -11,6 +11,9 @@ from collections import defaultdict
 import copy
 import networkx as nx #uncomment if you don't want to use "quick"/install networkx
 
+#from rdkit import rdBase
+#print(rdBase.rdkitVersion)
+
 
 global __ATOM_LIST__
 __ATOM_LIST__ = [ x.strip() for x in ['h ','he', \
@@ -109,16 +112,17 @@ def get_atomic_charge(atom,atomic_valence_electrons,BO_valence):
     return charge
 
 def clean_charges(mol):
-# this hack should not be needed any more but is kept just in case
-#
+    Chem.SanitizeMol(mol)
+    #rxn_smarts = ['[N+:1]=[*:2]-[C-:3]>>[N+0:1]-[*:2]=[C-0:3]',
+    #              '[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
+    #              '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]',
+    #              '[#8:1]=[#6:2]([!-:6])[*:3]=[*:4][#6-:5]>>[*-:1][*:2]([*:6])=[*:3][*:4]=[*+0:5]',
+    #              '[O:1]=[c:2][c-:3]>>[*-:1][*:2][*+0:3]',
+    #              '[O:1]=[C:2][C-:3]>>[*-:1][*:2]=[*+0:3]']
 
-    rxn_smarts = ['[N+:1]=[*:2]-[C-:3]>>[N+0:1]-[*:2]=[C-0:3]',
-                  '[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
-                  '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]',
-                  '[#8:1]=[#6:2]([!-:6])[*:3]=[*:4][#6-:5]>>[*-:1][*:2]([*:6])=[*:3][*:4]=[*+0:5]',
-                  '[O:1]=[c:2][c-:3]>>[*-:1][*:2][*+0:3]',
-                  '[O:1]=[C:2][C-:3]>>[*-:1][*:2]=[*+0:3]']
-
+    rxn_smarts = ['[#6,#7:1]1=[#6,#7:2][#6,#7:3]=[#6,#7:4][CX3-,NX3-:5][#6,#7:6]1=[#6,#7:7]>>\
+                   [#6,#7:1]1=[#6,#7:2][#6,#7:3]=[#6,#7:4][-0,-0:5]=[#6,#7:6]1[#6-,#7-:7]']
+    
     fragments = Chem.GetMolFrags(mol,asMols=True,sanitizeFrags=False)
 
     for i,fragment in enumerate(fragments):
@@ -128,6 +132,8 @@ def clean_charges(mol):
                 rxn = AllChem.ReactionFromSmarts(smarts)
                 ps = rxn.RunReactants((fragment,))
                 fragment = ps[0][0]
+                Chem.SanitizeMol(fragment)
+                #print(Chem.MolToSmiles(fragment))
         if i == 0:
             mol = fragment
         else:
@@ -189,8 +195,7 @@ def set_atomic_charges(mol,atomicNumList,atomic_valence_electrons,BO_valences,BO
         if (abs(charge) > 0):
             a.SetFormalCharge(int(charge))
 
-    # shouldn't be needed anymore bit is kept just in case
-    #mol = clean_charges(mol)
+    mol = clean_charges(mol)
 
     return mol
 
