@@ -245,8 +245,7 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
     BO_valences = list(BO_matrix.sum(axis=1))
 
     if (l != l2):
-        raise RuntimeError('sizes of adjMat ({0:d}) and Atoms '
-                           '{1:d} differ'.format(l, l2))
+        raise RuntimeError('sizes of adjMat ({0:d}) and Atoms {1:d} differ'.format(l, l2))
 
     rwMol = Chem.RWMol(mol)
 
@@ -287,8 +286,7 @@ def set_atomic_charges(mol, atoms, atomic_valence_electrons,
     q = 0
     for i, atom in enumerate(atoms):
         a = mol.GetAtomWithIdx(i)
-        charge = get_atomic_charge(
-            atom, atomic_valence_electrons[atom], BO_valences[i])
+        charge = get_atomic_charge(atom, atomic_valence_electrons[atom], BO_valences[i])
         q += charge
         if atom == 6:
             number_of_single_bonds_to_C = list(BO_matrix[i, :]).count(1)
@@ -372,6 +370,14 @@ def get_UA_pairs(UA, AC, use_graph=True):
 def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     """
 
+    implemenation of algorithm shown in Figure 2
+
+    UA: unsaturated atoms
+
+    DU: degree of unsaturation (u matrix in Figure)
+
+    best_BO: Bcurr in Figure
+
     """
 
     global atomic_valence
@@ -386,11 +392,6 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     valences_list = itertools.product(*valences_list_of_lists)
 
     best_BO = AC.copy()
-
-    # implemenation of algorithm shown in Figure 2
-    # UA: unsaturated atoms
-    # DU: degree of unsaturation (u matrix in Figure)
-    # best_BO: Bcurr in Figure
 
     for valences in valences_list:
         AC_valence = list(AC.sum(axis=1))
@@ -426,20 +427,11 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
 
     # convert AC matrix to bond order (BO) matrix
     BO, atomic_valence_electrons = AC2BO(
-        AC, atoms, charge, allow_charged_fragments=allow_charged_fragments, use_graph=use_graph)
-
-
-    # print(atomic_valence_electrons)
-    # print(BO)
-    # # G = nx.from_numpy_matrix(AC)
-    # G = nx.Graph()
-    # G.add_edges_from(BO)
-    # A = nx.adjacency_matrix(G)
-    # pos = nx.spring_layout(G)
-    # colors = range(20)
-    # nx.draw(G, pos, node_color='#A0CBE2', edge_color=colors,
-    #     width=4, edge_cmap=plt.cm.Blues, with_labels=False)
-    # plt.show()
+        AC,
+        atoms,
+        charge,
+        allow_charged_fragments=allow_charged_fragments,
+        use_graph=use_graph)
 
     # add BO connectivity and charge info to mol object
     mol = BO2mol(
@@ -589,14 +581,6 @@ def xyz2mol(atoms, coordinates,
     # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge,
     # and mol object with no connectivity information
     AC, mol = xyz2AC(atoms, coordinates)
-
-    # G = nx.from_numpy_matrix(AC)
-    # A = nx.adjacency_matrix(G)
-    # pos = nx.spring_layout(G)
-    # colors = range(20)
-    # nx.draw(G, pos, node_color='#A0CBE2', edge_color=colors,
-    #     width=4, edge_cmap=plt.cm.Blues, with_labels=False)
-    # plt.show()
 
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
