@@ -11,6 +11,8 @@ Implementation by Jan H. Jensen, based on the paper
 
 """
 
+import matplotlib.pyplot as plt
+
 import copy
 import itertools
 from collections import defaultdict
@@ -424,7 +426,20 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
 
     # convert AC matrix to bond order (BO) matrix
     BO, atomic_valence_electrons = AC2BO(
-        AC, atoms, charge, allow_charged_fragments, use_graph)
+        AC, atoms, charge, allow_charged_fragments=allow_charged_fragments, use_graph=use_graph)
+
+
+    # print(atomic_valence_electrons)
+    # print(BO)
+    # # G = nx.from_numpy_matrix(AC)
+    # G = nx.Graph()
+    # G.add_edges_from(BO)
+    # A = nx.adjacency_matrix(G)
+    # pos = nx.spring_layout(G)
+    # colors = range(20)
+    # nx.draw(G, pos, node_color='#A0CBE2', edge_color=colors,
+    #     width=4, edge_cmap=plt.cm.Blues, with_labels=False)
+    # plt.show()
 
     # add BO connectivity and charge info to mol object
     mol = BO2mol(
@@ -492,10 +507,32 @@ def xyz2AC(atoms, xyz):
         conf.SetAtomPosition(i, (xyz[i][0], xyz[i][1], xyz[i][2]))
     mol.AddConformer(conf)
 
-    dMat = Chem.Get3DDistanceMatrix(mol)
-    pt = Chem.GetPeriodicTable()
+    AC = get_AC(mol)
 
-    num_atoms = len(atoms)
+    return AC, mol
+
+
+def get_AC(mol):
+    """
+
+    Generate adjacent matrix from atoms and coordinates.
+
+    AC is a (num_atoms, num_atoms) matrix with 1 being covalent bond and 0 is not
+
+    args:
+        mol - rdkit molobj with 3D conformer
+
+    returns:
+        AC - adjacent matrix
+
+    """
+
+    # Calculate distance matrix
+    dMat = Chem.Get3DDistanceMatrix(mol)
+    print(dMat.mean())
+
+    pt = Chem.GetPeriodicTable()
+    num_atoms = mol.GetNumAtoms()
     AC = np.zeros((num_atoms, num_atoms), dtype=int)
 
     for i in range(num_atoms):
@@ -508,7 +545,7 @@ def xyz2AC(atoms, xyz):
                 AC[i, j] = 1
                 AC[j, i] = 1
 
-    return AC, mol
+    return AC
 
 
 def chiral_stereo_check(mol):
@@ -554,6 +591,14 @@ def xyz2mol(atoms, coordinates,
     # and mol object with no connectivity information
     AC, mol = xyz2AC(atoms, coordinates)
 
+    # G = nx.from_numpy_matrix(AC)
+    # A = nx.adjacency_matrix(G)
+    # pos = nx.spring_layout(G)
+    # colors = range(20)
+    # nx.draw(G, pos, node_color='#A0CBE2', edge_color=colors,
+    #     width=4, edge_cmap=plt.cm.Blues, with_labels=False)
+    # plt.show()
+
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
     new_mol = AC2mol(mol, AC, atoms, charge, allow_charged_fragments=allow_charged_fragments, use_graph=use_graph)
@@ -576,10 +621,10 @@ if __name__ == "__main__":
     parser.add_argument('--ignore-chiral',
         action="store_true",
         help="Ignore chiral centers")
-    parser.add_argument('--ignore-charged-fragments',
+    parser.add_argument('--no-charged-fragments',
         action="store_true",
         help="Allow radicals to be made")
-    parser.add_argument('--not-quick',
+    parser.add_argument('--no-graph',
         action="store_true",
         help="Run xyz2mol without networkx dependencies")
     parser.add_argument('-o', '--output-format',
@@ -598,12 +643,12 @@ if __name__ == "__main__":
     filename = args.structure
 
     # allow for charged fragments, alternatively radicals are made
-    charged_fragments = True
+    charged_fragments = not args.no_charged_fragments
 
     # quick is faster for large systems but requires networkx
     # if you don't want to install networkx set quick=False and
     # uncomment 'import networkx as nx' at the top of the file
-    quick = True
+    quick = not args.no_graph
 
     # chiral comment
     embed_chiral = not args.ignore_chiral
