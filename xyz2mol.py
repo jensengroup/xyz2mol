@@ -529,7 +529,6 @@ def get_AC(mol):
 
     # Calculate distance matrix
     dMat = Chem.Get3DDistanceMatrix(mol)
-    print(dMat.mean())
 
     pt = Chem.GetPeriodicTable()
     num_atoms = mol.GetNumAtoms()
