@@ -191,14 +191,18 @@ def clean_charges(mol):
 
     """
 
-    rxn_smarts = ['[N+:1]=[*:2]-[C-:3]>>[N+0:1]-[*:2]=[C-0:3]',
-                  '[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
-                  '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]',
-                  '[#8:1]=[#6:2]([!-:6])[*:3]=[*:4][#6-:5]>>[*-:1][*:2]([*:6])=[*:3][*:4]=[*+0:5]',
-                  '[O:1]=[c:2][c-:3]>>[*-:1][*:2][*+0:3]',
-                  '[O:1]=[C:2][C-:3]>>[*-:1][*:2]=[*+0:3]']
+    Chem.SanitizeMol(mol)
+    #rxn_smarts = ['[N+:1]=[*:2]-[C-:3]>>[N+0:1]-[*:2]=[C-0:3]',
+    #              '[N+:1]=[*:2]-[O-:3]>>[N+0:1]-[*:2]=[O-0:3]',
+    #              '[N+:1]=[*:2]-[*:3]=[*:4]-[O-:5]>>[N+0:1]-[*:2]=[*:3]-[*:4]=[O-0:5]',
+    #              '[#8:1]=[#6:2]([!-:6])[*:3]=[*:4][#6-:5]>>[*-:1][*:2]([*:6])=[*:3][*:4]=[*+0:5]',
+    #              '[O:1]=[c:2][c-:3]>>[*-:1][*:2][*+0:3]',
+    #              '[O:1]=[C:2][C-:3]>>[*-:1][*:2]=[*+0:3]']
 
-    fragments = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
+    rxn_smarts = ['[#6,#7:1]1=[#6,#7:2][#6,#7:3]=[#6,#7:4][CX3-,NX3-:5][#6,#7:6]1=[#6,#7:7]>>\
+                   [#6,#7:1]1=[#6,#7:2][#6,#7:3]=[#6,#7:4][-0,-0:5]=[#6,#7:6]1[#6-,#7-:7]']
+
+    fragments = Chem.GetMolFrags(mol,asMols=True,sanitizeFrags=False)
 
     for i, fragment in enumerate(fragments):
         for smarts in rxn_smarts:
@@ -207,6 +211,7 @@ def clean_charges(mol):
                 rxn = AllChem.ReactionFromSmarts(smarts)
                 ps = rxn.RunReactants((fragment,))
                 fragment = ps[0][0]
+                Chem.SanitizeMol(fragment)
         if i == 0:
             mol = fragment
         else:
@@ -297,6 +302,8 @@ def set_atomic_charges(mol, atoms, atomic_valence_electrons,
 
         if (abs(charge) > 0):
             a.SetFormalCharge(int(charge))
+
+    mol = clean_charges(mol)
 
     return mol
 
