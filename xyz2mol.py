@@ -11,8 +11,6 @@ Implementation by Jan H. Jensen, based on the paper
 
 """
 
-import matplotlib.pyplot as plt
-
 import copy
 import itertools
 from collections import defaultdict
