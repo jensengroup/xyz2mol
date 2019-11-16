@@ -35,6 +35,7 @@ if __name__ == "__main__":
     #smiles_list = ['C[N+](=O)[O-]']
     #smiles_list = ['N#CC(C#N)=CC=C1C=CC=CC(=C1)c1ccc(cc1)[N+](=O)[O-]']
     #smiles_list = ['CNC([O-])=C([NH+]=C/CC(O)=O)C']
+    #smiles_list = ['Cc1cn(C2CC(O)C(COP(=O)([O-])OP(=O)([O-])OC3OC(C)C([NH3+])C(O)C3O)O2)c(=O)[nH]c1=O']
 
     for smiles in smiles_list:
         #print(smiles)

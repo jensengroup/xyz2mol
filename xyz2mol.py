@@ -88,7 +88,7 @@ def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList,charged_frag
             if q != 0:
                 q_list.append(q)
 
-    if (BO-AC).sum() == sum(DU) and charge == Q and len(q_list) <= abs(charge):
+    if (BO-AC).sum() == sum(DU) and charge == Q:# and len(q_list) <= abs(charge):
         return True
     else:
         return False
@@ -247,12 +247,12 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
     atomic_valence = defaultdict(list)
     atomic_valence[1] = [1]
     atomic_valence[6] = [4]
-    atomic_valence[7] = [4,3]
+    atomic_valence[7] = [3,4]
     atomic_valence[8] = [2,1]
     atomic_valence[9] = [1]
     atomic_valence[14] = [4]
-    atomic_valence[15] = [5,4,3]
-    atomic_valence[16] = [6,4,2]
+    atomic_valence[15] = [5,3] #[5,4,3]
+    atomic_valence[16] = [6,3,2] #[6,4,2]
     atomic_valence[17] = [1]
     atomic_valence[32] = [4]
     atomic_valence[35] = [1]
@@ -275,8 +275,13 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
 
 # make a list of valences, e.g. for CO: [[4],[2,1]]
     valences_list_of_lists = []
-    for atomicNum in atomicNumList:
-        valences_list_of_lists.append(atomic_valence[atomicNum])
+    AC_valence = list(AC.sum(axis=1))
+    
+    for atomicNum,valence in zip(atomicNumList,AC_valence):
+        # valence can't be smaller number of neighbourgs
+        possible_valence = [x for x in atomic_valence[atomicNum] if x >= valence]
+        valences_list_of_lists.append(possible_valence)
+
 
 # convert [[4],[2,1]] to [[4,2],[4,1]]
     valences_list = itertools.product(*valences_list_of_lists)
@@ -290,7 +295,7 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
 #
 
     for valences in valences_list:
-        AC_valence = list(AC.sum(axis=1))
+        #AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
 
         if len(UA) == 0 and BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
