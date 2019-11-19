@@ -37,21 +37,22 @@ __ATOM_LIST__ = \
 
 
 global atomic_valence
+global atomic_valence_electrons
+
 atomic_valence = defaultdict(list)
 atomic_valence[1] = [1]
 atomic_valence[6] = [4]
-atomic_valence[7] = [4, 3]
-atomic_valence[8] = [2, 1]
+atomic_valence[7] = [3,4]
+atomic_valence[8] = [2,1]
 atomic_valence[9] = [1]
 atomic_valence[14] = [4]
-atomic_valence[15] = [5, 4, 3]
-atomic_valence[16] = [6, 4, 2]
+atomic_valence[15] = [5,3] #[5,4,3]
+atomic_valence[16] = [6,3,2] #[6,4,2]
 atomic_valence[17] = [1]
 atomic_valence[32] = [4]
 atomic_valence[35] = [1]
 atomic_valence[53] = [1]
 
-global atomic_valence_electrons
 atomic_valence_electrons = {}
 atomic_valence_electrons[1] = 1
 atomic_valence_electrons[6] = 4
@@ -159,9 +160,9 @@ def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, allow_charged_
 
     check_sum = (BO - AC).sum() == sum(DU)
     check_charge = charge == Q
-    check_len = len(q_list) <= abs(charge)
+    # check_len = len(q_list) <= abs(charge)
 
-    if check_sum and check_charge and check_len:
+    if check_sum and check_charge:
         return True
 
     return False
@@ -199,8 +200,10 @@ def clean_charges(mol):
     #              '[O:1]=[c:2][c-:3]>>[*-:1][*:2][*+0:3]',
     #              '[O:1]=[C:2][C-:3]>>[*-:1][*:2]=[*+0:3]']
 
-    rxn_smarts = ['[#6,#7:1]1=[#6,#7:2][#6,#7:3]=[#6,#7:4][CX3-,NX3-:5][#6,#7:6]1=[#6,#7:7]>>\
-                   [#6,#7:1]1=[#6,#7:2][#6,#7:3]=[#6,#7:4][-0,-0:5]=[#6,#7:6]1[#6-,#7-:7]']
+    rxn_smarts = ['[#6,#7:1]1=[#6,#7:2][#6,#7:3]=[#6,#7:4][CX3-,NX3-:5][#6,#7:6]1=[#6,#7:7]>>'
+                  '[#6,#7:1]1=[#6,#7:2][#6,#7:3]=[#6,#7:4][-0,-0:5]=[#6,#7:6]1[#6-,#7-:7]',
+                  '[#6,#7:1]1=[#6,#7:2][#6,#7:3](=[#6,#7:4])[#6,#7:5]=[#6,#7:6][CX3-,NX3-:7]1>>'
+                  '[#6,#7:1]1=[#6,#7:2][#6,#7:3]([#6-,#7-:4])=[#6,#7:5][#6,#7:6]=[-0,-0:7]1']
 
     fragments = Chem.GetMolFrags(mol,asMols=True,sanitizeFrags=False)
 
@@ -390,6 +393,7 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
 
     # make a list of valences, e.g. for CO: [[4],[2,1]]
     valences_list_of_lists = []
+    AC_valence = list(AC.sum(axis=1))
     for atomicNum in atoms:
         valences_list_of_lists.append(atomic_valence[atomicNum])
 
@@ -399,7 +403,7 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     best_BO = AC.copy()
 
     for valences in valences_list:
-        AC_valence = list(AC.sum(axis=1))
+        # AC_valence = list(AC.sum(axis=1))
         UA, DU_from_AC = get_UA(valences, AC_valence)
 
         check_len = (len(UA) == 0)

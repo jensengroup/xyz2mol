@@ -48,6 +48,7 @@ __TEST_SMILES__ = [
     'C[N+](=O)[O-]',
     'N#CC(C#N)=CC=C1C=CC=CC(=C1)c1ccc(cc1)[N+](=O)[O-]',
     'CNC([O-])=C([NH+]=C/CC(O)=O)C',
+    'Cc1cn(C2CC(O)C(COP(=O)([O-])OP(=O)([O-])OC3OC(C)C([NH3+])C(O)C3O)O2)c(=O)[nH]c1=O',
 ]
 
 __TEST_FILES__ = [
