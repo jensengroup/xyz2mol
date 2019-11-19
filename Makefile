@@ -1,5 +1,5 @@
 
-PYTHON=./env/bin/python
+PYTHON=python
 CONDA=conda
 
 all: env
