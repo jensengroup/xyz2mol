@@ -8,6 +8,10 @@ If the molecule is charged then the charge (q) must be supplied in the second li
 
 usage: type "python xyz2mol.py xxx.xyz"
 
-Dependencies: [networkx](https://networkx.github.io/)
+Dependencies: 
+
+RDKit (version 2019.9.1 or later needed for huckel option)
+
+[networkx](https://networkx.github.io/)
 
 You can remove this dependency by setting quick=False and uncommenting the import statement at the top of xyz2mol.py
