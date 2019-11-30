@@ -7,6 +7,8 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 import itertools
 from rdkit.Chem import rdmolops
+from rdkit.Chem import rdEHTTools #requires RDKit 2019.9.1 or later
+
 from collections import defaultdict
 import copy
 import networkx as nx #uncomment if you don't want to use "quick"/install networkx
@@ -71,7 +73,10 @@ def valences_not_too_large(BO,valences):
     return True
 
 
-def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList,charged_fragments):
+def BO_is_OK(BO,AC,charge,DU,atomic_valence_electrons,atomicNumList,charged_fragments,valences):
+    if not valences_not_too_large(BO,valences):
+        return False
+
     Q = 0 # total charge
     q_list = []
     if charged_fragments:
@@ -305,13 +310,13 @@ def AC2BO(AC,atomicNumList,charge,charged_fragments,quick):
         #AC_valence = list(AC.sum(axis=1))
         UA,DU_from_AC = getUA(valences, AC_valence)
 
-        if len(UA) == 0 and BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
+        if len(UA) == 0 and BO_is_OK(AC,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments,valences):
             return AC,atomic_valence_electrons
         
         UA_pairs_list = get_UA_pairs(UA,AC,quick) 
         for UA_pairs in UA_pairs_list:
             BO = get_BO(AC,UA,DU_from_AC,valences,UA_pairs,quick)
-            if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments):
+            if BO_is_OK(BO,AC,charge,DU_from_AC,atomic_valence_electrons,atomicNumList,charged_fragments,valences):
                 return BO,atomic_valence_electrons
 
             elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO,valences):
@@ -372,7 +377,13 @@ def read_xyz_file(filename):
     
     return atomicNumList,charge,xyz_coordinates
 
-def xyz2AC(atomicNumList,xyz):
+def xyz2AC(atomicNumList,xyz,charge,huckel):
+    if huckel:
+        return xyz2AC_huckel(atomicNumList,xyz,charge)
+    else:
+        return xyz2AC_vdW(atomicNumList,xyz)
+
+def xyz2AC_vdW(atomicNumList,xyz):
     import numpy as np
     mol = get_proto_mol(atomicNumList)
 
@@ -389,11 +400,40 @@ def xyz2AC(atomicNumList,xyz):
 
     for i in range(num_atoms):
         a_i = mol.GetAtomWithIdx(i)
-        Rcov_i = pt.GetRcovalent(a_i.GetAtomicNum())*1.30
+        Rcov_i = pt.GetRcovalent(a_i.GetAtomicNum())*1.30 #1.3 is arbitrary factor, may need adjusting
         for j in range(i+1,num_atoms):
             a_j = mol.GetAtomWithIdx(j)
-            Rcov_j = pt.GetRcovalent(a_j.GetAtomicNum())*1.30
+            Rcov_j = pt.GetRcovalent(a_j.GetAtomicNum())*1.30 #1.3 is arbitrary factor, may need adjusting
             if dMat[i,j] <= Rcov_i + Rcov_j:
+                AC[i,j] = 1
+                AC[j,i] = 1
+
+    return AC,mol
+
+def xyz2AC_huckel(atomicNumList,xyz,charge):
+    import numpy as np
+    mol = get_proto_mol(atomicNumList)
+
+    conf = Chem.Conformer(mol.GetNumAtoms())
+    for i in range(mol.GetNumAtoms()):
+        conf.SetAtomPosition(i,(xyz[i][0],xyz[i][1],xyz[i][2]))
+    mol.AddConformer(conf)
+
+
+    num_atoms = len(atomicNumList)
+    AC = np.zeros((num_atoms,num_atoms)).astype(int)
+    
+    mol_huckel = Chem.Mol(mol)
+    mol_huckel.GetAtomWithIdx(0).SetFormalCharge(charge) #mol charge arbitrarily added to 1st atom    
+
+    passed,result = rdEHTTools.RunMol(mol_huckel)
+    opop = result.GetReducedOverlapPopulationMatrix()
+    tri = np.zeros((num_atoms, num_atoms))
+    tri[np.tril(np.ones((num_atoms, num_atoms), dtype=bool))] = opop #lower triangular to square matrix
+    for i in range(num_atoms):
+        for j in range(i+1,num_atoms):
+            pair_pop = abs(tri[j,i])   
+            if pair_pop >= 0.15: #arbitry cutoff for bond. May need adjustment
                 AC[i,j] = 1
                 AC[j,i] = 1
 
@@ -407,11 +447,11 @@ def chiral_stereo_check(mol):
 
     return mol
 
-def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick):
+def xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments=True,quick=True, huckel=True):
 
 # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge, 
 # and mol object with no connectivity information
-    AC,mol = xyz2AC(atomicNumList,xyz_coordinates)
+    AC, mol = xyz2AC(atomicNumList,xyz_coordinates, charge, huckel)
 
 # Convert AC to bond order matrix and add connectivity and charge info to mol object
     new_mol = AC2mol(mol,AC,atomicNumList,charge,charged_fragments,quick)
@@ -439,9 +479,13 @@ if __name__ == "__main__":
     # uncomment 'import networkx as nx' at the top of the file 
     quick = True 
 
+    # huckel uses extended Huckel bond orders to locate bonds (requires RDKit 2019.9.1 or later)
+    # otherwise van der Waals radii are used
+    huckel = True
+
     atomicNumList, charge, xyz_coordinates = read_xyz_file(filename)
 
-    mol = xyz2mol(atomicNumList, charge, xyz_coordinates, charged_fragments, quick)
+    mol = xyz2mol(atomicNumList, charge, xyz_coordinates, charged_fragments, quick, huckel)
 
     if args.sdf:
         filename = filename.replace(".xyz", "")

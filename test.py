@@ -1,10 +1,13 @@
 from rdkit import Chem
 from rdkit.Chem import rdmolops
 from rdkit.Chem import AllChem
+from rdkit import rdBase
 import xyz2mol as x2m
 
 
 if __name__ == "__main__":
+
+    #print(rdBase.rdkitVersion)
 
     filename = "ethane.xyz"
     filename = "acetate.xyz"
@@ -12,9 +15,10 @@ if __name__ == "__main__":
 
     charged_fragments = True
     quick = True
+    huckel = True
 
     atomicNumList,charge,xyz_coordinates = x2m.read_xyz_file(filename)
-    mol = x2m.xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick)
+    mol = x2m.xyz2mol(atomicNumList,charge,xyz_coordinates,charged_fragments,quick,huckel)
 
     print(Chem.MolToSmiles(mol, isomericSmiles=True))
 
