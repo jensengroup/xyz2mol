@@ -40,5 +40,8 @@ Read in xyz file with a charge and print out the SMILES
 
     xyz2mol.py examples/acetate.xyz --charge -1
 
-## 
+## Dependencies:
+
+    rdkit # (version 2019.9.1 or later needed for huckel option)
+    networkx
 

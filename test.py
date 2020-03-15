@@ -1,11 +1,8 @@
 
-import pytest
-import rmsd
 import numpy as np
-
-from rdkit import Chem
-from rdkit.Chem import rdmolops
-from rdkit.Chem import AllChem
+import pytest
+from rdkit import Chem, rdBase
+from rdkit.Chem import AllChem, rdmolops
 
 import xyz2mol as x2m
 
@@ -118,9 +115,6 @@ def test_smiles_from_adjacent_matrix(smiles):
 @pytest.mark.parametrize("smiles", __TEST_SMILES__)
 def test_smiles_from_coord(smiles):
 
-    charged_fragments = True
-    quick = True
-
     # The answer
     mol = Chem.MolFromSmiles(smiles)
     charge = Chem.GetFormalCharge(mol)
@@ -153,8 +147,7 @@ def test_smiles_from_xyz_files(filename, charge, answer):
     charged_fragments = True
     quick = True
 
-    atoms, coordinates = rmsd.get_coordinates_xyz(filename)
-    atoms = [x2m.int_atom(atom) for atom in atoms]
+    atoms, charge_read, coordinates = x2m.read_xyz_file(filename)
 
     mol = x2m.xyz2mol(atoms, coordinates, charge=charge)
     mol = Chem.RemoveHs(mol)

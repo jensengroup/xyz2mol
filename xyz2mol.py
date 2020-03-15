@@ -13,6 +13,13 @@ Implementation by Jan H. Jensen, based on the paper
 
 import copy
 import itertools
+
+from rdkit.Chem import rdmolops
+try:
+    from rdkit.Chem import rdEHTTools #requires RDKit 2019.9.1 or later
+except ImportError:
+    rdEHTTools = None
+
 from collections import defaultdict
 
 import numpy as np
@@ -82,6 +89,7 @@ def int_atom(atom):
     convert str atom to integer atom
     """
     global __ATOM_LIST__
+    print(atom)
     atom = atom.lower()
     return __ATOM_LIST__.index(atom) + 1
 
@@ -129,10 +137,28 @@ def valences_not_too_large(BO, valences):
     return True
 
 
-def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, allow_charged_fragments=True):
+def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valances,
+    allow_charged_fragments=True):
     """
-    Check bond order
+    Sanity of bond-orders
+
+    args:
+        BO -
+        AC -
+        charge -
+        DU - 
+
+
+    optional
+        allow_charges_fragments - 
+
+
+    returns:
+        boolean - true of molecule is OK, false if not
     """
+
+    if not valences_not_too_large(BO, valances):
+        return False
 
     # total charge
     Q = 0
@@ -403,13 +429,13 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     best_BO = AC.copy()
 
     for valences in valences_list:
-        # AC_valence = list(AC.sum(axis=1))
+
         UA, DU_from_AC = get_UA(valences, AC_valence)
 
         check_len = (len(UA) == 0)
         if check_len:
             check_bo = BO_is_OK(AC, AC, charge, DU_from_AC,
-                atomic_valence_electrons, atoms,
+                atomic_valence_electrons, atoms, valences,
                 allow_charged_fragments=allow_charged_fragments)
         else:
             check_bo = None
@@ -420,8 +446,11 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
         UA_pairs_list = get_UA_pairs(UA, AC, use_graph=use_graph)
         for UA_pairs in UA_pairs_list:
             BO = get_BO(AC, UA, DU_from_AC, valences, UA_pairs, use_graph=use_graph)
-            if BO_is_OK(BO, AC, charge, DU_from_AC,
-                        atomic_valence_electrons, atoms, allow_charged_fragments=allow_charged_fragments):
+            status = BO_is_OK(BO, AC, charge, DU_from_AC,
+                        atomic_valence_electrons, atoms, valences,
+                        allow_charged_fragments=allow_charged_fragments)
+
+            if status:
                 return BO, atomic_valence_electrons
 
             elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO, valences):
@@ -495,9 +524,32 @@ def read_xyz_file(filename, look_for_charge=True):
     return atoms, charge, xyz_coordinates
 
 
-def xyz2AC(atoms, xyz):
+def xyz2AC(atoms, xyz, charge, use_huckel=False):
     """
+
+    atoms and coordinates to atom connectivity (AC)
+
+    args:
+        atoms - int atom types
+        xyz - coordinates
+        charge - molecule charge
+
+    optional:
+        use_huckel - Use Huckel method for atom connecitivty
+
+    returns
+        ac - atom connectivity matrix
+        mol - rdkit molecule
+
     """
+
+    if use_huckel:
+        return xyz2AC_huckel(atoms, xyz, charge)
+    else:
+        return xyz2AC_vdW(atoms, xyz)
+
+
+def xyz2AC_vdW(atoms, xyz):
 
     # Get mol template
     mol = get_proto_mol(atoms)
@@ -513,15 +565,21 @@ def xyz2AC(atoms, xyz):
     return AC, mol
 
 
-def get_AC(mol):
+def get_AC(mol, covalent_factor=1.3):
     """
 
     Generate adjacent matrix from atoms and coordinates.
 
     AC is a (num_atoms, num_atoms) matrix with 1 being covalent bond and 0 is not
 
+
+    covalent_factor - 1.3 is an arbitrary factor
+
     args:
         mol - rdkit molobj with 3D conformer
+
+    optional
+        covalent_factor - increase covalent bond length threshold with facto
 
     returns:
         AC - adjacent matrix
@@ -537,15 +595,55 @@ def get_AC(mol):
 
     for i in range(num_atoms):
         a_i = mol.GetAtomWithIdx(i)
-        Rcov_i = pt.GetRcovalent(a_i.GetAtomicNum()) * 1.30
+        Rcov_i = pt.GetRcovalent(a_i.GetAtomicNum()) * covalent_factor
         for j in range(i + 1, num_atoms):
             a_j = mol.GetAtomWithIdx(j)
-            Rcov_j = pt.GetRcovalent(a_j.GetAtomicNum()) * 1.30
+            Rcov_j = pt.GetRcovalent(a_j.GetAtomicNum()) * covalent_factor
             if dMat[i, j] <= Rcov_i + Rcov_j:
                 AC[i, j] = 1
                 AC[j, i] = 1
 
     return AC
+
+
+def xyz2AC_huckel(atomicNumList,xyz,charge):
+    """
+
+    args
+        atomicNumList - atom type list
+        xyz - coordinates
+        charge - molecule charge
+
+    returns
+        ac - atom connectivity
+        mol - rdkit molecule
+
+    """
+    mol = get_proto_mol(atomicNumList)
+
+    conf = Chem.Conformer(mol.GetNumAtoms())
+    for i in range(mol.GetNumAtoms()):
+        conf.SetAtomPosition(i,(xyz[i][0],xyz[i][1],xyz[i][2]))
+    mol.AddConformer(conf)
+
+    num_atoms = len(atomicNumList)
+    AC = np.zeros((num_atoms,num_atoms)).astype(int)
+
+    mol_huckel = Chem.Mol(mol)
+    mol_huckel.GetAtomWithIdx(0).SetFormalCharge(charge) #mol charge arbitrarily added to 1st atom    
+
+    passed,result = rdEHTTools.RunMol(mol_huckel)
+    opop = result.GetReducedOverlapPopulationMatrix()
+    tri = np.zeros((num_atoms, num_atoms))
+    tri[np.tril(np.ones((num_atoms, num_atoms), dtype=bool))] = opop #lower triangular to square matrix
+    for i in range(num_atoms):
+        for j in range(i+1,num_atoms):
+            pair_pop = abs(tri[j,i])   
+            if pair_pop >= 0.15: #arbitry cutoff for bond. May need adjustment
+                AC[i,j] = 1
+                AC[j,i] = 1
+
+    return AC, mol
 
 
 def chiral_stereo_check(mol):
@@ -568,6 +666,7 @@ def xyz2mol(atoms, coordinates,
     charge=0,
     allow_charged_fragments=True,
     use_graph=True,
+    use_huckel=False,
     embed_chiral=True):
     """
     Generate a rdkit molobj from atoms, coordinates and a total_charge.
@@ -580,6 +679,7 @@ def xyz2mol(atoms, coordinates,
     optional:
         allow_charged_fragments - alternatively radicals are made
         use_graph - use graph (networkx)
+        use_huckel - Use Huckel method for atom connectivity prediction
         embed_chiral - embed chiral information to the molecule
 
     returns:
@@ -589,17 +689,26 @@ def xyz2mol(atoms, coordinates,
 
     # Get atom connectivity (AC) matrix, list of atomic numbers, molecular charge,
     # and mol object with no connectivity information
-    AC, mol = xyz2AC(atoms, coordinates)
+    AC, mol = xyz2AC(atoms, coordinates, charge, use_huckel=use_huckel)
 
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
-    new_mol = AC2mol(mol, AC, atoms, charge, allow_charged_fragments=allow_charged_fragments, use_graph=use_graph)
+    new_mol = AC2mol(mol, AC, atoms, charge,
+        allow_charged_fragments=allow_charged_fragments,
+        use_graph=use_graph)
 
     # Check for stereocenters and chiral centers
     if embed_chiral:
         chiral_stereo_check(new_mol)
 
     return new_mol
+
+
+def main():
+
+
+    return
+
 
 if __name__ == "__main__":
 
@@ -619,6 +728,12 @@ if __name__ == "__main__":
     parser.add_argument('--no-graph',
         action="store_true",
         help="Run xyz2mol without networkx dependencies")
+
+    # huckel uses extended Huckel bond orders to locate bonds (requires RDKit 2019.9.1 or later)
+    # otherwise van der Waals radii are used
+    parser.add_argument('--use-huckel',
+        action="store_true",
+        help="Use Huckel method for atom connectivity")
     parser.add_argument('-o', '--output-format',
         action="store",
         type=str,
@@ -648,6 +763,10 @@ if __name__ == "__main__":
     # read atoms and coordinates. Try to find the charge
     atoms, charge, xyz_coordinates = read_xyz_file(filename)
 
+    # huckel uses extended Huckel bond orders to locate bonds (requires RDKit 2019.9.1 or later)
+    # otherwise van der Waals radii are used
+    use_huckel = args.use_huckel
+
     # if explicit charge from args, set it
     if args.charge is not None:
         charge = int(args.charge)
@@ -657,7 +776,8 @@ if __name__ == "__main__":
         charge=charge,
         use_graph=quick,
         allow_charged_fragments=charged_fragments,
-        embed_chiral=embed_chiral)
+        embed_chiral=embed_chiral,
+        use_huckel=use_huckel)
 
     # Print output
     if args.output_format == "sdf":
