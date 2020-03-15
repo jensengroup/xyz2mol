@@ -45,7 +45,7 @@ __TEST_SMILES__ = [
     'C[N+](=O)[O-]',
     'N#CC(C#N)=CC=C1C=CC=CC(=C1)c1ccc(cc1)[N+](=O)[O-]',
     'CNC([O-])=C([NH+]=C/CC(O)=O)C',
-    'Cc1cn(C2CC(O)C(COP(=O)([O-])OP(=O)([O-])OC3OC(C)C([NH3+])C(O)C3O)O2)c(=O)[nH]c1=O',
+    # 'Cc1cn(C2CC(O)C(COP(=O)([O-])OP(=O)([O-])OC3OC(C)C([NH3+])C(O)C3O)O2)c(=O)[nH]c1=O', # works, just slow
 ]
 
 __TEST_FILES__ = [
@@ -113,7 +113,7 @@ def test_smiles_from_adjacent_matrix(smiles):
     return
 
 @pytest.mark.parametrize("smiles", __TEST_SMILES__)
-def test_smiles_from_coord(smiles):
+def test_smiles_from_coord_vdw(smiles):
 
     # The answer
     mol = Chem.MolFromSmiles(smiles)
@@ -125,6 +125,35 @@ def test_smiles_from_coord(smiles):
 
     # Generate molobj from atoms, charge and coordinates
     mol = x2m.xyz2mol(atoms, coordinates, charge=charge)
+
+    # For this test, remove chira. clean and canonical
+    Chem.Kekulize(mol)
+    mol = Chem.RemoveHs(mol)
+    Chem.RemoveStereochemistry(mol)
+    smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+
+    # Please look away. A small hack that removes the explicit hydrogens
+    mol = Chem.MolFromSmiles(smiles)
+    smiles = Chem.MolToSmiles(mol)
+
+    assert smiles == canonical_smiles
+
+    return
+
+
+@pytest.mark.parametrize("smiles", __TEST_SMILES__)
+def test_smiles_from_coord_huckel(smiles):
+
+    # The answer
+    mol = Chem.MolFromSmiles(smiles)
+    charge = Chem.GetFormalCharge(mol)
+    canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+
+    # generate forcefield coordinates
+    atoms, coordinates = generate_structure_from_smiles(smiles)
+
+    # Generate molobj from atoms, charge and coordinates
+    mol = x2m.xyz2mol(atoms, coordinates, charge=charge, use_huckel=True)
 
     # For this test, remove chira. clean and canonical
     Chem.Kekulize(mol)
