@@ -205,6 +205,9 @@ if __name__ == "__main__":
         print(True, answer)
 
     for smiles in __TEST_SMILES__:
-        test_smiles_from_coord(smiles)
+        test_smiles_from_coord_vdw(smiles)
         print(True, smiles)
 
+    for smiles in __TEST_SMILES__:
+        test_smiles_from_coord_huckel(smiles)
+        print(True, smiles)
