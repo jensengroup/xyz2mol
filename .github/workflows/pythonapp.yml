@@ -1,0 +1,46 @@
+name: Conda/Python pytest
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python and Conda enviroment
+      run: |
+        conda update -n base -c defaults conda
+        conda env create -f requirements.yml -p env
+        source $(conda info --root)/etc/profile.d/conda.sh
+        conda activate ./env
+        which pip
+    - name: Install dependencies
+      run: |
+        # Activate
+        source $(conda info --root)/etc/profile.d/conda.sh
+        conda activate ./env
+        # Pip install requirments
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Lint with flake8
+      run: |
+        # Activate
+        source $(conda info --root)/etc/profile.d/conda.sh
+        conda activate ./env
+        # Make sure it is installed
+        pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 *.py --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 *.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest
+      run: |
+        # Activate
+        source $(conda info --root)/etc/profile.d/conda.sh
+        conda activate ./env
+        # Make sure pytest is avaliabel
+        pip install pytest
+        # Test files
+        pytest -v test.py
