@@ -89,7 +89,7 @@ def int_atom(atom):
     convert str atom to integer atom
     """
     global __ATOM_LIST__
-    print(atom)
+    #print(atom)
     atom = atom.lower()
     return __ATOM_LIST__.index(atom) + 1
 
