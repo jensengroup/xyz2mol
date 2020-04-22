@@ -48,6 +48,7 @@ global atomic_valence_electrons
 
 atomic_valence = defaultdict(list)
 atomic_valence[1] = [1]
+atomic_valence[5] = [3,4]
 atomic_valence[6] = [4]
 atomic_valence[7] = [3,4]
 atomic_valence[8] = [2,1]
@@ -62,6 +63,7 @@ atomic_valence[53] = [1]
 
 atomic_valence_electrons = {}
 atomic_valence_electrons[1] = 1
+atomic_valence_electrons[5] = 3
 atomic_valence_electrons[6] = 4
 atomic_valence_electrons[7] = 5
 atomic_valence_electrons[8] = 6
@@ -137,7 +139,7 @@ def valences_not_too_large(BO, valences):
     return True
 
 
-def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valances,
+def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
     allow_charged_fragments=True):
     """
     Sanity of bond-orders
@@ -157,7 +159,7 @@ def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valances,
         boolean - true of molecule is OK, false if not
     """
 
-    if not valences_not_too_large(BO, valances):
+    if not valences_not_too_large(BO, valences):
         return False
 
     # total charge
