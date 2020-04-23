@@ -423,8 +423,8 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     valences_list_of_lists = []
     AC_valence = list(AC.sum(axis=1))
     
-    for atomicNum,valence in zip(atomicNumList,AC_valence):
-        # valence can't be smaller number of neighbourgs
+    for atomicNum,valence in zip(atoms,AC_valence):
+        # valence can't be smaller than number of neighbourgs
         possible_valence = [x for x in atomic_valence[atomicNum] if x >= valence]
         valences_list_of_lists.append(possible_valence)
 
