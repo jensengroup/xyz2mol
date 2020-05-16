@@ -51,7 +51,7 @@ atomic_valence[1] = [1]
 atomic_valence[5] = [3,4]
 atomic_valence[6] = [4]
 atomic_valence[7] = [3,4]
-atomic_valence[8] = [2,1]
+atomic_valence[8] = [2,1,3]
 atomic_valence[9] = [1]
 atomic_valence[14] = [4]
 atomic_valence[15] = [5,3] #[5,4,3]
@@ -138,30 +138,8 @@ def valences_not_too_large(BO, valences):
 
     return True
 
-
-def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
-    allow_charged_fragments=True):
-    """
-    Sanity of bond-orders
-
-    args:
-        BO -
-        AC -
-        charge -
-        DU - 
-
-
-    optional
-        allow_charges_fragments - 
-
-
-    returns:
-        boolean - true of molecule is OK, false if not
-    """
-
-    if not valences_not_too_large(BO, valences):
-        return False
-
+def charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
+                 allow_charged_fragments=True):
     # total charge
     Q = 0
 
@@ -186,11 +164,36 @@ def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
             if q != 0:
                 q_list.append(q)
 
-    check_sum = (BO - AC).sum() == sum(DU)
-    check_charge = charge == Q
-    # check_len = len(q_list) <= abs(charge)
+    return (charge == Q)
 
-    if check_sum and check_charge:
+def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
+    allow_charged_fragments=True):
+    """
+    Sanity of bond-orders
+
+    args:
+        BO -
+        AC -
+        charge -
+        DU - 
+
+
+    optional
+        allow_charges_fragments - 
+
+
+    returns:
+        boolean - true of molecule is OK, false if not
+    """
+
+    if not valences_not_too_large(BO, valences):
+        return False
+
+    check_sum = (BO - AC).sum() == sum(DU)
+    check_charge = charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
+                                allow_charged_fragments)
+
+    if check_charge and check_sum: 
         return True
 
     return False
@@ -454,13 +457,16 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
             status = BO_is_OK(BO, AC, charge, DU_from_AC,
                         atomic_valence_electrons, atoms, valences,
                         allow_charged_fragments=allow_charged_fragments)
+            charge_OK = charge_is_OK(BO, AC, charge, DU_from_AC, atomic_valence_electrons, atoms, valences,
+                                     allow_charged_fragments=allow_charged_fragments)
 
             if status:
                 return BO, atomic_valence_electrons
-
-            elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO, valences):
+            elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO, valences) and charge_OK:
                 best_BO = BO.copy()
 
+    if not charge_OK:
+        print("Warning: SMILES charge doesn't match input charge")
     return best_BO, atomic_valence_electrons
 
 
