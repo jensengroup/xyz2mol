@@ -24,6 +24,7 @@ from collections import defaultdict
 
 import numpy as np
 import networkx as nx
+import huckel_tm as tm
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdmolops
@@ -42,6 +43,8 @@ __ATOM_LIST__ = \
      'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn',
      'fr', 'ra', 'ac', 'th', 'pa', 'u',  'np', 'pu']
 
+global TMs
+TMs = {26}
 
 global atomic_valence
 global atomic_valence_electrons
@@ -57,6 +60,7 @@ atomic_valence[14] = [4]
 atomic_valence[15] = [5,3] #[5,4,3]
 atomic_valence[16] = [6,3,2] #[6,4,2]
 atomic_valence[17] = [1]
+atomic_valence[26] = [8] #not really needed
 atomic_valence[32] = [4]
 atomic_valence[35] = [1]
 atomic_valence[53] = [1]
@@ -72,6 +76,7 @@ atomic_valence_electrons[14] = 4
 atomic_valence_electrons[15] = 5
 atomic_valence_electrons[16] = 6
 atomic_valence_electrons[17] = 7
+atomic_valence_electrons[26] = 8
 atomic_valence_electrons[32] = 4
 atomic_valence_electrons[35] = 7
 atomic_valence_electrons[53] = 7
@@ -138,7 +143,7 @@ def valences_not_too_large(BO, valences):
 
     return True
 
-def charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
+def charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences, TM_charges,
                  allow_charged_fragments=True):
     # total charge
     Q = 0
@@ -151,6 +156,8 @@ def charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
         BO_valences = list(BO.sum(axis=1))
         for i, atom in enumerate(atoms):
             q = get_atomic_charge(atom, atomic_valence_electrons[atom], BO_valences[i])
+            if TM_charges[i]: 
+                q = TM_charges[i] 
             Q += q
             if atom == 6:
                 number_of_single_bonds_to_C = list(BO[i, :]).count(1)
@@ -166,7 +173,7 @@ def charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
 
     return (charge == Q)
 
-def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
+def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences, TM_charges,
     allow_charged_fragments=True):
     """
     Sanity of bond-orders
@@ -191,7 +198,7 @@ def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
 
     check_sum = (BO - AC).sum() == sum(DU)
     check_charge = charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
-                                allow_charged_fragments)
+                                TM_charges, allow_charged_fragments)
 
     if check_charge and check_sum: 
         return True
@@ -255,7 +262,7 @@ def clean_charges(mol):
 
 
 def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
-           mol_charge, allow_charged_fragments=True):
+           mol_charge, TM_charges, TM_bonds, allow_charged_fragments=True):
     """
     based on code written by Paolo Toscani
 
@@ -276,6 +283,7 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
         mol - updated rdkit molecule with bond connectivity
 
     """
+    global TMs
 
     l = len(BO_matrix)
     l2 = len(atoms)
@@ -292,13 +300,18 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
         3: Chem.BondType.TRIPLE
     }
 
-    for i in range(l):
+    for i,atom in enumerate(atoms):
         for j in range(i + 1, l):
             bo = int(round(BO_matrix[i, j]))
-            if (bo == 0):
-                continue
-            bt = bondTypeDict.get(bo, Chem.BondType.SINGLE)
-            rwMol.AddBond(i, j, bt)
+            if (i,j) in TM_bonds:
+                bt = Chem.BondType.DATIVE
+                if atom in TMs:
+                    rwMol.AddBond(j, i, bt)
+                else:
+                    rwMol.AddBond(i, j, bt)
+            elif bo != 0:
+                bt = bondTypeDict.get(bo, Chem.BondType.SINGLE)
+                rwMol.AddBond(i, j, bt)
 
     mol = rwMol.GetMol()
 
@@ -309,7 +322,8 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
             atomic_valence_electrons,
             BO_valences,
             BO_matrix,
-            mol_charge)
+            mol_charge,
+            TM_charges)
     else:
         mol = set_atomic_radicals(mol, atoms, atomic_valence_electrons, BO_valences)
 
@@ -317,13 +331,15 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
 
 
 def set_atomic_charges(mol, atoms, atomic_valence_electrons,
-                       BO_valences, BO_matrix, mol_charge):
+                       BO_valences, BO_matrix, mol_charge, TM_charges):
     """
     """
     q = 0
     for i, atom in enumerate(atoms):
         a = mol.GetAtomWithIdx(i)
         charge = get_atomic_charge(atom, atomic_valence_electrons[atom], BO_valences[i])
+        if TM_charges[i]: 
+            charge = TM_charges[i] 
         q += charge
         if atom == 6:
             number_of_single_bonds_to_C = list(BO_matrix[i, :]).count(1)
@@ -340,6 +356,7 @@ def set_atomic_charges(mol, atoms, atomic_valence_electrons,
     mol = clean_charges(mol)
 
     return mol
+
 
 
 def set_atomic_radicals(mol, atoms, atomic_valence_electrons, BO_valences):
@@ -406,7 +423,7 @@ def get_UA_pairs(UA, AC, use_graph=True):
     return UA_pairs
 
 
-def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
+def AC2BO(AC, atoms, charge, TM_charges, allow_charged_fragments=True, use_graph=True):
     """
 
     implemenation of algorithm shown in Figure 2
@@ -455,11 +472,11 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
         for UA_pairs in UA_pairs_list:
             BO = get_BO(AC, UA, DU_from_AC, valences, UA_pairs, use_graph=use_graph)
             status = BO_is_OK(BO, AC, charge, DU_from_AC,
-                        atomic_valence_electrons, atoms, valences,
+                        atomic_valence_electrons, atoms, valences, TM_charges,
                         allow_charged_fragments=allow_charged_fragments)
             charge_OK = charge_is_OK(BO, AC, charge, DU_from_AC, atomic_valence_electrons, atoms, valences,
-                                     allow_charged_fragments=allow_charged_fragments)
-
+                                     TM_charges, allow_charged_fragments=allow_charged_fragments)
+           
             if status:
                 return BO, atomic_valence_electrons
             elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO, valences) and charge_OK:
@@ -469,16 +486,37 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
         print("Warning: SMILES charge doesn't match input charge")
     return best_BO, atomic_valence_electrons
 
+def get_TM_bonds(AC,atoms):
+    TM_bonds = []
+    for i,atom in enumerate(atoms):
+        for j in range(i+1,len(atoms)):
+            if atom in TMs and AC[i,j] == 1:
+                AC[i,j] = 0
+                AC[j,i] = 0
+                TM_bonds.append((i,j))
+
+    return AC, TM_bonds
 
 def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     """
     """
+    global TMs
+    if set(atoms) & TMs:
+        TM_charges = tm.get_TM_charges(mol,charge)
+        #TM_charges = [2, 0, 0, 0, 0, 0, 0, 0, 0, 0] #debug
+        print(TM_charges) #debug
+        AC, TM_bonds = get_TM_bonds(AC,atoms)
+    else:
+        TM_bonds = []
+        TM_charges = len(AC)*[0]
+
 
     # convert AC matrix to bond order (BO) matrix
     BO, atomic_valence_electrons = AC2BO(
         AC,
         atoms,
         charge,
+        TM_charges,
         allow_charged_fragments=allow_charged_fragments,
         use_graph=use_graph)
 
@@ -489,6 +527,8 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
         atoms,
         atomic_valence_electrons,
         charge,
+        TM_charges,
+        TM_bonds,
         allow_charged_fragments=allow_charged_fragments)
 
     return mol
