@@ -20,14 +20,14 @@ try:
 except ImportError:
     rdEHTTools = None
 
-from collections import defaultdict
-
 import numpy as np
 import networkx as nx
 import huckel_tm as tm
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdmolops
+
+from parameters import TMs, atomic_valence, atomic_valence_electrons
 
 global __ATOM_LIST__
 __ATOM_LIST__ = \
@@ -44,43 +44,9 @@ __ATOM_LIST__ = \
      'fr', 'ra', 'ac', 'th', 'pa', 'u',  'np', 'pu']
 
 global TMs
-TMs = {26}
 
 global atomic_valence
 global atomic_valence_electrons
-
-atomic_valence = defaultdict(list)
-atomic_valence[1] = [1]
-atomic_valence[5] = [3,4]
-atomic_valence[6] = [4]
-atomic_valence[7] = [3,4]
-atomic_valence[8] = [2,1,3]
-atomic_valence[9] = [1]
-atomic_valence[14] = [4]
-atomic_valence[15] = [5,3] #[5,4,3]
-atomic_valence[16] = [6,3,2] #[6,4,2]
-atomic_valence[17] = [1]
-atomic_valence[26] = [8] #not really needed
-atomic_valence[32] = [4]
-atomic_valence[35] = [1]
-atomic_valence[53] = [1]
-
-atomic_valence_electrons = {}
-atomic_valence_electrons[1] = 1
-atomic_valence_electrons[5] = 3
-atomic_valence_electrons[6] = 4
-atomic_valence_electrons[7] = 5
-atomic_valence_electrons[8] = 6
-atomic_valence_electrons[9] = 7
-atomic_valence_electrons[14] = 4
-atomic_valence_electrons[15] = 5
-atomic_valence_electrons[16] = 6
-atomic_valence_electrons[17] = 7
-atomic_valence_electrons[26] = 8
-atomic_valence_electrons[32] = 4
-atomic_valence_electrons[35] = 7
-atomic_valence_electrons[53] = 7
-
 
 def str_atom(atom):
     """
@@ -156,17 +122,18 @@ def charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences, 
         BO_valences = list(BO.sum(axis=1))
         for i, atom in enumerate(atoms):
             q = get_atomic_charge(atom, atomic_valence_electrons[atom], BO_valences[i])
-            if TM_charges[i]: 
+            if i in TM_charges: 
                 q = TM_charges[i] 
             Q += q
-            if atom == 6:
-                number_of_single_bonds_to_C = list(BO[i, :]).count(1)
-                if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
-                    Q += 1
-                    q = 2
-                if number_of_single_bonds_to_C == 3 and Q + 1 < charge:
-                    Q += 2
-                    q = 1
+            if not TM_charges:
+                if atom == 6:
+                    number_of_single_bonds_to_C = list(BO[i, :]).count(1)
+                    if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
+                        Q += 1
+                        q = 2
+                    if number_of_single_bonds_to_C == 3 and Q + 1 < charge:
+                        Q += 2
+                        q = 1
 
             if q != 0:
                 q_list.append(q)
@@ -212,6 +179,8 @@ def get_atomic_charge(atom, atomic_valence_electrons, BO_valence):
 
     if atom == 1:
         charge = 1 - BO_valence
+        if BO_valence == 0:
+            charge = -1
     elif atom == 5:
         charge = 3 - BO_valence
     elif atom == 15 and BO_valence == 5:
@@ -338,17 +307,18 @@ def set_atomic_charges(mol, atoms, atomic_valence_electrons,
     for i, atom in enumerate(atoms):
         a = mol.GetAtomWithIdx(i)
         charge = get_atomic_charge(atom, atomic_valence_electrons[atom], BO_valences[i])
-        if TM_charges[i]: 
+        if i in TM_charges: 
             charge = TM_charges[i] 
         q += charge
-        if atom == 6:
-            number_of_single_bonds_to_C = list(BO_matrix[i, :]).count(1)
-            if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
-                q += 1
-                charge = 0
-            if number_of_single_bonds_to_C == 3 and q + 1 < mol_charge:
-                q += 2
-                charge = 1
+        if not TM_charges:
+            if atom == 6:
+                number_of_single_bonds_to_C = list(BO_matrix[i, :]).count(1)
+                if number_of_single_bonds_to_C == 2 and BO_valences[i] == 2:
+                    q += 1
+                    charge = 0
+                if number_of_single_bonds_to_C == 3 and q + 1 < mol_charge:
+                    q += 2
+                    charge = 1
 
         if (abs(charge) > 0):
             a.SetFormalCharge(int(charge))
@@ -482,19 +452,17 @@ def AC2BO(AC, atoms, charge, TM_charges, allow_charged_fragments=True, use_graph
             elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO, valences) and charge_OK:
                 best_BO = BO.copy()
 
-    if not charge_OK:
-        print("Warning: SMILES charge doesn't match input charge")
     return best_BO, atomic_valence_electrons
 
 def get_TM_bonds(AC,atoms):
     TM_bonds = []
     for i,atom in enumerate(atoms):
-        for j in range(i+1,len(atoms)):
+        for j in range(len(atoms)):
             if atom in TMs and AC[i,j] == 1:
                 AC[i,j] = 0
                 AC[j,i] = 0
-                TM_bonds.append((i,j))
-
+                TM_bonds.append(tuple(sorted([i,j])))
+ 
     return AC, TM_bonds
 
 def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
@@ -504,12 +472,11 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
     if set(atoms) & TMs:
         TM_charges = tm.get_TM_charges(mol,charge)
         #TM_charges = [2, 0, 0, 0, 0, 0, 0, 0, 0, 0] #debug
-        print(TM_charges) #debug
+        #print(TM_charges) #debug
         AC, TM_bonds = get_TM_bonds(AC,atoms)
     else:
         TM_bonds = []
-        TM_charges = len(AC)*[0]
-
+        TM_charges = {}
 
     # convert AC matrix to bond order (BO) matrix
     BO, atomic_valence_electrons = AC2BO(
@@ -530,6 +497,9 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
         TM_charges,
         TM_bonds,
         allow_charged_fragments=allow_charged_fragments)
+    
+    #if Chem.GetFormalCharge(mol) != charge:
+    #    print("Warning: SMILES charge doesn't match input charge")
 
     return mol
 

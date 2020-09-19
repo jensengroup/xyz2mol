@@ -103,14 +103,14 @@ def Pipek_Mezey(C,S,aos,nmos):
   for _ in range(max_iter):
     thetas = []
     mo_pairs = list(combinations(list(range(nmos)),2))
-    np.random.seed(2) #debug
-    np.random.shuffle(mo_pairs)
+    #np.random.seed(2) #debug
+    #np.random.shuffle(mo_pairs)
     for (i,j) in mo_pairs:
       theta = get_theta(V,S,aos,i,j)
       V[:,i], V[:,j] = rotate(V[:,i], V[:,j], np.cos(theta), np.sin(theta))
       thetas.append(theta)
-    #if max(thetas) > 0.001:
-    #  break
+    if max(thetas) > 0.01: #0.001:
+      break
 
   return V
 
@@ -146,19 +146,22 @@ def get_TM_charges(m,charge):
 
   for occ,orb_pop in zip(occupancy, Q_Ai.T):
     atom_index_w_largest_pop = np.where(abs(orb_pop) == max(abs(orb_pop)))[0][0]
-    atoms2electrons[atom_index_w_largest_pop] += occ
-    top_id = np.where(abs(orb_pop) > 0.5/occ)
-    if top_id[0][0] == 0: #debug
-      print(occ, top_id, orb_pop[top_id]) #debug
+    #if atom_index_w_largest_pop == 14:
+    #  print(atom_index_w_largest_pop,max(abs(orb_pop))) #debug
+    if max(abs(orb_pop)) > 1.75:
+      atoms2electrons[atom_index_w_largest_pop] += occ
+      #print(atom_index_w_largest_pop,max(abs(orb_pop))) #debug
 
-  #print(atoms2electrons)
+    #top_id = np.where(abs(orb_pop) > 0.5/occ)
+    #if top_id[0][0] == 0: #debug
+    #  print(occ, top_id, orb_pop[top_id]) #debug
 
-  TM_charges = []
+  #print(atoms2electrons) #debug
+
+  TM_charges = {}
   for i,atom in enumerate(atoms):
     if atom in TMs:
-      TM_charges.append(atomic_valence_electrons[atom]-atoms2electrons[i])
-    else:
-      TM_charges.append(0)
+      TM_charges[i] = atomic_valence_electrons[atom]-atoms2electrons[i]
 
   return TM_charges
 
