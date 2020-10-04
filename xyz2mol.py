@@ -453,7 +453,33 @@ def get_TM_bonds(AC,atoms):
  
     return AC, TM_bonds
 
-def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
+def AC2mol(mol, AC, atoms, charge, TM_charges, TM_bonds, allow_charged_fragments=True, use_graph=True):
+    """
+    """
+
+    # convert AC matrix to bond order (BO) matrix
+    BO, atomic_valence_electrons = AC2BO(
+        AC,
+        atoms,
+        charge,
+        TM_charges,
+        allow_charged_fragments=allow_charged_fragments,
+        use_graph=use_graph)
+
+    # add BO connectivity and charge info to mol object
+    mol = BO2mol(
+        mol,
+        BO,
+        atoms,
+        atomic_valence_electrons,
+        charge,
+        TM_charges, 
+        TM_bonds,
+        allow_charged_fragments=allow_charged_fragments)
+
+    return mol
+
+def AC2mol_tm(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     """
     """
     global TMs
@@ -463,29 +489,12 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
     else:
         TM_bonds = []
         TM_charges = {}
+        new_mol = AC2mol(mol, AC, atoms, charge, TM_charges, TM_bonds, allow_charged_fragments=True, use_graph=True)
+        #new_mols = rdchem.ChemMolSupplier(new_smiles)
+        return new_mol
 
     for TM_charges in TM_charges_list:
-        #print(TM_charges)
-        # convert AC matrix to bond order (BO) matrix
-        BO, atomic_valence_electrons = AC2BO(
-            AC,
-            atoms,
-            charge,
-            TM_charges,
-            allow_charged_fragments=allow_charged_fragments,
-            use_graph=use_graph)
-
-        # add BO connectivity and charge info to mol object
-        new_mol = BO2mol(
-            mol,
-            BO,
-            atoms,
-            atomic_valence_electrons,
-            charge,
-            TM_charges,
-            TM_bonds,
-            allow_charged_fragments=allow_charged_fragments)
-        
+        new_mol = AC2mol(mol, AC, atoms, charge, TM_charges, TM_bonds, allow_charged_fragments=True, use_graph=True)
         if Chem.GetFormalCharge(new_mol) == charge:
             try:
                 Chem.SanitizeMol(new_mol)
@@ -680,7 +689,7 @@ def xyz2mol(atoms, coordinates,
     charge=0,
     allow_charged_fragments=True,
     use_graph=True,
-    use_huckel=False,
+    use_huckel=True,
     embed_chiral=True):
     """
     Generate a rdkit molobj from atoms, coordinates and a total_charge.
@@ -707,7 +716,7 @@ def xyz2mol(atoms, coordinates,
 
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
-    new_mol = AC2mol(mol, AC, atoms, charge,
+    new_mol = AC2mol_tm(mol, AC, atoms, charge,
         allow_charged_fragments=allow_charged_fragments,
         use_graph=use_graph)
 
