@@ -15,6 +15,7 @@ import copy
 import itertools
 
 from rdkit.Chem import rdmolops
+from rdkit.Chem import rdchem
 try:
     from rdkit.Chem import rdEHTTools #requires RDKit 2019.9.1 or later
 except ImportError:
@@ -493,17 +494,17 @@ def AC2mol_tm(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=Tr
         #new_mols = rdchem.ChemMolSupplier(new_smiles)
         return new_mol
 
+    new_mols = []
     for TM_charges in TM_charges_list:
         new_mol = AC2mol(mol, AC, atoms, charge, TM_charges, TM_bonds, allow_charged_fragments=True, use_graph=True)
         if Chem.GetFormalCharge(new_mol) == charge:
             try:
                 Chem.SanitizeMol(new_mol)
-                return new_mol
+                new_mols.append(new_mol)
             except:
                 pass
             
-
-    return new_mol
+    return new_mols
 
 
 def get_proto_mol(atoms):
@@ -716,15 +717,23 @@ def xyz2mol(atoms, coordinates,
 
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
-    new_mol = AC2mol_tm(mol, AC, atoms, charge,
+    new_mols = AC2mol_tm(mol, AC, atoms, charge,
         allow_charged_fragments=allow_charged_fragments,
         use_graph=use_graph)
 
     # Check for stereocenters and chiral centers
-    if embed_chiral:
-        chiral_stereo_check(new_mol)
+    # fix for new_mols
+    #if embed_chiral:
+    #    chiral_stereo_check(new_mol)
 
-    return new_mol
+    return new_mols
+
+def canon_smiles(mol, isomeric_smiles):
+    smiles = Chem.MolToSmiles(mol, isomericSmiles=isomeric_smiles)
+    m = Chem.MolFromSmiles(smiles)
+    smiles = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
+
+    return smiles
 
 
 def main():
@@ -795,7 +804,7 @@ if __name__ == "__main__":
         charge = int(args.charge)
 
     # Get the molobj
-    mol = xyz2mol(atoms, xyz_coordinates,
+    mols = xyz2mol(atoms, xyz_coordinates,
         charge=charge,
         use_graph=quick,
         allow_charged_fragments=charged_fragments,
@@ -803,14 +812,13 @@ if __name__ == "__main__":
         use_huckel=use_huckel)
 
     # Print output
-    if args.output_format == "sdf":
-        txt = Chem.MolToMolBlock(mol)
-        print(txt)
+    # fix for mols
+    #if args.output_format == "sdf":
+    #    txt = Chem.MolToMolBlock(mol)
+    #    print(txt)
 
-    else:
-        # Canonical hack
-        isomeric_smiles = not args.ignore_chiral
-        smiles = Chem.MolToSmiles(mol, isomericSmiles=isomeric_smiles)
-        m = Chem.MolFromSmiles(smiles)
-        smiles = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
-        print(smiles)
+    #else:
+    # Canonical hack
+    isomeric_smiles = not args.ignore_chiral
+    smiles = [canon_smiles(mol,isomeric_smiles) for mol in mols]
+    print(*smiles)
