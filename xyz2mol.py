@@ -22,26 +22,14 @@ except ImportError:
 
 import numpy as np
 import networkx as nx
-import huckel_tm as tm
+import tm_comb as tm
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdmolops
 
-from parameters import TMs, atomic_valence, atomic_valence_electrons
+from parameters import TMs, atomic_valence, atomic_valence_electrons, __ATOM_LIST__
 
 global __ATOM_LIST__
-__ATOM_LIST__ = \
-    ['h',  'he',
-     'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne',
-     'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar',
-     'k',  'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu',
-     'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr',
-     'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag',
-     'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe',
-     'cs', 'ba', 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy',
-     'ho', 'er', 'tm', 'yb', 'lu', 'hf', 'ta', 'w',  're', 'os', 'ir', 'pt',
-     'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn',
-     'fr', 'ra', 'ac', 'th', 'pa', 'u',  'np', 'pu']
 
 global TMs
 
@@ -470,38 +458,43 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
     """
     global TMs
     if set(atoms) & TMs:
-        TM_charges = tm.get_TM_charges(mol,charge)
-        #TM_charges = [2, 0, 0, 0, 0, 0, 0, 0, 0, 0] #debug
-        #print(TM_charges) #debug
+        TM_charges_list = tm.get_TM_charges(atoms)
         AC, TM_bonds = get_TM_bonds(AC,atoms)
     else:
         TM_bonds = []
         TM_charges = {}
 
-    # convert AC matrix to bond order (BO) matrix
-    BO, atomic_valence_electrons = AC2BO(
-        AC,
-        atoms,
-        charge,
-        TM_charges,
-        allow_charged_fragments=allow_charged_fragments,
-        use_graph=use_graph)
+    for TM_charges in TM_charges_list:
+        #print(TM_charges)
+        # convert AC matrix to bond order (BO) matrix
+        BO, atomic_valence_electrons = AC2BO(
+            AC,
+            atoms,
+            charge,
+            TM_charges,
+            allow_charged_fragments=allow_charged_fragments,
+            use_graph=use_graph)
 
-    # add BO connectivity and charge info to mol object
-    mol = BO2mol(
-        mol,
-        BO,
-        atoms,
-        atomic_valence_electrons,
-        charge,
-        TM_charges,
-        TM_bonds,
-        allow_charged_fragments=allow_charged_fragments)
-    
-    #if Chem.GetFormalCharge(mol) != charge:
-    #    print("Warning: SMILES charge doesn't match input charge")
+        # add BO connectivity and charge info to mol object
+        new_mol = BO2mol(
+            mol,
+            BO,
+            atoms,
+            atomic_valence_electrons,
+            charge,
+            TM_charges,
+            TM_bonds,
+            allow_charged_fragments=allow_charged_fragments)
+        
+        if Chem.GetFormalCharge(new_mol) == charge:
+            try:
+                Chem.SanitizeMol(new_mol)
+                return new_mol
+            except:
+                pass
+            
 
-    return mol
+    return new_mol
 
 
 def get_proto_mol(atoms):
