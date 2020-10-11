@@ -4,7 +4,7 @@ __ATOM_LIST__ = \
     ['h',  'he',
      'li', 'be', 'b',  'c',  'n',  'o',  'f',  'ne',
      'na', 'mg', 'al', 'si', 'p',  's',  'cl', 'ar',
-     'k',  'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu',
+     'k',  'ca', 'sc', 'ti', 'v', 'cr', 'mn', 'fe', 'co', 'ni', 'cu',
      'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr',
      'rb', 'sr', 'y',  'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag',
      'cd', 'in', 'sn', 'sb', 'te', 'i',  'xe',
@@ -84,7 +84,7 @@ TM_charge_list[46] = [2, 4, 0]
 TM_charge_list[47] = [1, 2]
 TM_charge_list[48] = [2]
 
-TM_charge_list[71] = [3]
+TM_charge_list[57] = [3]
 TM_charge_list[72] = [4, 3, 2]
 TM_charge_list[73] = [5, 4, 3, 2]
 TM_charge_list[74] = [3, 6, 2, 4, 5]
