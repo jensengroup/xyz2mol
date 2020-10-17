@@ -27,6 +27,7 @@ import networkx as nx
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdmolops
+import sys
 
 global __ATOM_LIST__
 __ATOM_LIST__ = \
@@ -426,9 +427,12 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     valences_list_of_lists = []
     AC_valence = list(AC.sum(axis=1))
     
-    for atomicNum,valence in zip(atoms,AC_valence):
+    for i,(atomicNum,valence) in enumerate(zip(atoms,AC_valence)):
         # valence can't be smaller than number of neighbourgs
         possible_valence = [x for x in atomic_valence[atomicNum] if x >= valence]
+        if not possible_valence:
+            print('Valence of atom',i,'is',valence,'which bigger than allowed max',max(atomic_valence[atomicNum]),'. Stopping')
+            sys.exit()
         valences_list_of_lists.append(possible_valence)
 
     # convert [[4],[2,1]] to [[4,2],[4,1]]
