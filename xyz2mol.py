@@ -15,6 +15,7 @@ import copy
 import itertools
 
 from rdkit.Chem import rdmolops
+from rdkit.Chem import rdchem
 try:
     from rdkit.Chem import rdEHTTools #requires RDKit 2019.9.1 or later
 except ImportError:
@@ -495,7 +496,11 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
         charge,
         allow_charged_fragments=allow_charged_fragments)
 
-    return mol
+    # BO2mol returns an arbitrary resonance form. Let's make the rest
+    print('AC2mol',Chem.MolToSmiles(mol))
+    mols = rdchem.ResonanceMolSupplier(mol, Chem.UNCONSTRAINED_CATIONS, Chem.UNCONSTRAINED_ANIONS)
+
+    return mols
 
 
 def get_proto_mol(atoms):
@@ -698,7 +703,7 @@ def xyz2mol(atoms, coordinates,
         embed_chiral - embed chiral information to the molecule
 
     returns:
-        mol - rdkit molobj
+        mols - list of rdkit molobjects
 
     """
 
@@ -708,15 +713,15 @@ def xyz2mol(atoms, coordinates,
 
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
-    new_mol = AC2mol(mol, AC, atoms, charge,
+    new_mols = AC2mol(mol, AC, atoms, charge,
         allow_charged_fragments=allow_charged_fragments,
         use_graph=use_graph)
 
     # Check for stereocenters and chiral centers
-    if embed_chiral:
-        chiral_stereo_check(new_mol)
+    #if embed_chiral:
+    #    chiral_stereo_check(new_mol)
 
-    return new_mol
+    return new_mols
 
 
 def main():
@@ -786,8 +791,8 @@ if __name__ == "__main__":
     if args.charge is not None:
         charge = int(args.charge)
 
-    # Get the molobj
-    mol = xyz2mol(atoms, xyz_coordinates,
+    # Get the molobjs
+    mols = xyz2mol(atoms, xyz_coordinates,
         charge=charge,
         use_graph=quick,
         allow_charged_fragments=charged_fragments,
@@ -795,14 +800,15 @@ if __name__ == "__main__":
         use_huckel=use_huckel)
 
     # Print output
-    if args.output_format == "sdf":
-        txt = Chem.MolToMolBlock(mol)
-        print(txt)
+    for mol in mols:
+        if args.output_format == "sdf":
+            txt = Chem.MolToMolBlock(mol)
+            print(txt)
 
-    else:
-        # Canonical hack
-        isomeric_smiles = not args.ignore_chiral
-        smiles = Chem.MolToSmiles(mol, isomericSmiles=isomeric_smiles)
-        m = Chem.MolFromSmiles(smiles)
-        smiles = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
-        print(smiles)
+        else:
+            # Canonical hack
+            isomeric_smiles = not args.ignore_chiral
+            smiles = Chem.MolToSmiles(mol, isomericSmiles=isomeric_smiles)
+            m = Chem.MolFromSmiles(smiles)
+            smiles = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
+            print(smiles)

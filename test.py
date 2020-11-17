@@ -103,12 +103,19 @@ def test_smiles_from_adjacent_matrix(smiles):
     # Define new molecule template from atoms
     new_mol = x2m.get_proto_mol(atoms)
 
-    # reconstruct the molecule from adjacent matrix, atoms and total charge
-    new_mol = x2m.AC2mol(new_mol, adjacent_matrix, atoms, charge, charged_fragments, quick)
-    new_mol = Chem.RemoveHs(new_mol)
-    new_mol_smiles = Chem.MolToSmiles(new_mol)
+        # reconstruct the molecule from adjacent matrix, atoms and total charge
+    new_mols = x2m.AC2mol(new_mol, adjacent_matrix, atoms, charge, charged_fragments, quick)
+    
+    new_mol_smiles_list = []
+    for new_mol in new_mols:
+        new_mol = Chem.RemoveHs(new_mol)
+        new_mol_smiles = Chem.MolToSmiles(new_mol)
 
-    assert new_mol_smiles == canonical_smiles
+        new_mol_smiles_list.append(new_mol_smiles)
+    
+    print(canonical_smiles, new_mol_smiles_list)
+
+    assert canonical_smiles in new_mol_smiles_list
 
     return
 
@@ -124,19 +131,22 @@ def test_smiles_from_coord_vdw(smiles):
     atoms, coordinates = generate_structure_from_smiles(smiles)
 
     # Generate molobj from atoms, charge and coordinates
-    mol = x2m.xyz2mol(atoms, coordinates, charge=charge)
+    mols = x2m.xyz2mol(atoms, coordinates, charge=charge)
 
+    smiles_list = []
+    for mol in mols:
     # For this test, remove chira. clean and canonical
-    Chem.Kekulize(mol)
-    mol = Chem.RemoveHs(mol)
-    Chem.RemoveStereochemistry(mol)
-    smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+        Chem.Kekulize(mol)
+        mol = Chem.RemoveHs(mol)
+        Chem.RemoveStereochemistry(mol)
+        smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
 
-    # Please look away. A small hack that removes the explicit hydrogens
-    mol = Chem.MolFromSmiles(smiles)
-    smiles = Chem.MolToSmiles(mol)
+        # Please look away. A small hack that removes the explicit hydrogens
+        mol = Chem.MolFromSmiles(smiles)
+        smiles = Chem.MolToSmiles(mol)
+        smiles_list.append(smiles)
 
-    assert smiles == canonical_smiles
+    assert canonical_smiles in smiles_list
 
     return
 
@@ -153,19 +163,22 @@ def test_smiles_from_coord_huckel(smiles):
     atoms, coordinates = generate_structure_from_smiles(smiles)
 
     # Generate molobj from atoms, charge and coordinates
-    mol = x2m.xyz2mol(atoms, coordinates, charge=charge, use_huckel=True)
+    mols = x2m.xyz2mol(atoms, coordinates, charge=charge, use_huckel=True)
 
-    # For this test, remove chira. clean and canonical
-    Chem.Kekulize(mol)
-    mol = Chem.RemoveHs(mol)
-    Chem.RemoveStereochemistry(mol)
-    smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
+    smiles_list = []
+    for mol in mols:
+        # For this test, remove chira. clean and canonical
+        Chem.Kekulize(mol)
+        mol = Chem.RemoveHs(mol)
+        Chem.RemoveStereochemistry(mol)
+        smiles = Chem.MolToSmiles(mol, isomericSmiles=False)
 
-    # Please look away. A small hack that removes the explicit hydrogens
-    mol = Chem.MolFromSmiles(smiles)
-    smiles = Chem.MolToSmiles(mol)
+        # Please look away. A small hack that removes the explicit hydrogens
+        mol = Chem.MolFromSmiles(smiles)
+        smiles = Chem.MolToSmiles(mol)
+        smiles_list.append(smiles)
 
-    assert smiles == canonical_smiles
+    assert canonical_smiles in smiles_list
 
     return
 
@@ -178,12 +191,16 @@ def test_smiles_from_xyz_files(filename, charge, answer):
 
     atoms, charge_read, coordinates = x2m.read_xyz_file(filename)
 
-    mol = x2m.xyz2mol(atoms, coordinates, charge=charge)
-    mol = Chem.RemoveHs(mol)
+    mols = x2m.xyz2mol(atoms, coordinates, charge=charge)
 
-    smiles = Chem.MolToSmiles(mol)
+    smiles_list = []
+    for mol in mols:
+        mol = Chem.RemoveHs(mol)
 
-    assert smiles == answer
+        smiles = Chem.MolToSmiles(mol)
+        smiles_list.append(smiles)
+
+    assert answer in smiles_list
 
     return
 
