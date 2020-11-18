@@ -1,6 +1,7 @@
-# Convert Cartesian coordinates to a molecular graph
+# Convert Cartesian coordinates to one or more molecular graphs
 
-Given Cartesian coordinates in the form of a `.xyz` file, the code constructs the molecular graph.
+Given Cartesian coordinates in the form of a `.xyz` file, the code constructs a list of one or more molecular graphs. In cases where there are several possible resonance forms xyz2mol returns a list of all, otherwise just a list of one.
+
 This code is based on the work of
 DOI: [10.1002/bkcs.10334](http://dx.doi.org/10.1002/bkcs.10334)
 
