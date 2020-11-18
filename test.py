@@ -112,8 +112,6 @@ def test_smiles_from_adjacent_matrix(smiles):
         new_mol_smiles = Chem.MolToSmiles(new_mol)
 
         new_mol_smiles_list.append(new_mol_smiles)
-    
-    print(canonical_smiles, new_mol_smiles_list)
 
     assert canonical_smiles in new_mol_smiles_list
 
@@ -199,6 +197,8 @@ def test_smiles_from_xyz_files(filename, charge, answer):
 
         smiles = Chem.MolToSmiles(mol)
         smiles_list.append(smiles)
+
+    print(answer, smiles_list)
 
     assert answer in smiles_list
 

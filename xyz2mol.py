@@ -497,8 +497,8 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
         allow_charged_fragments=allow_charged_fragments)
 
     # BO2mol returns an arbitrary resonance form. Let's make the rest
-    print('AC2mol',Chem.MolToSmiles(mol))
     mols = rdchem.ResonanceMolSupplier(mol, Chem.UNCONSTRAINED_CATIONS, Chem.UNCONSTRAINED_ANIONS)
+    mols = [mol for mol in mols]
 
     return mols
 
@@ -718,8 +718,9 @@ def xyz2mol(atoms, coordinates,
         use_graph=use_graph)
 
     # Check for stereocenters and chiral centers
-    #if embed_chiral:
-    #    chiral_stereo_check(new_mol)
+    if embed_chiral:
+        for new_mol in new_mols:
+            chiral_stereo_check(new_mol)
 
     return new_mols
 
