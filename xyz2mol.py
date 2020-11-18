@@ -339,7 +339,7 @@ def set_atomic_charges(mol, atoms, atomic_valence_electrons,
         if (abs(charge) > 0):
             a.SetFormalCharge(int(charge))
 
-    mol = clean_charges(mol)
+    #mol = clean_charges(mol)
 
     return mol
 
