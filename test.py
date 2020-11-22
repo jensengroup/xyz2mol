@@ -198,8 +198,6 @@ def test_smiles_from_xyz_files(filename, charge, answer):
         smiles = Chem.MolToSmiles(mol)
         smiles_list.append(smiles)
 
-    print(answer, smiles_list)
-
     assert answer in smiles_list
 
     return
