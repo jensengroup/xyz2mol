@@ -105,7 +105,6 @@ def charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences, 
 
     # charge fragment list
     q_list = []
-
     if allow_charged_fragments:
 
         BO_valences = list(BO.sum(axis=1))
@@ -418,8 +417,8 @@ def AC2BO(AC, atoms, charge, TM_charges, allow_charged_fragments=True, use_graph
 
         check_len = (len(UA) == 0)
         if check_len:
-            check_bo = BO_is_OK(AC, AC, charge, DU_from_AC,
-                atomic_valence_electrons, atoms, valences,
+            check_bo = BO_is_OK(AC, AC, charge, DU_from_AC, 
+                atomic_valence_electrons, atoms, valences, TM_charges,
                 allow_charged_fragments=allow_charged_fragments)
         else:
             check_bo = None
@@ -478,21 +477,25 @@ def AC2mol(mol, AC, atoms, charge, TM_charges, TM_bonds, allow_charged_fragments
         TM_bonds,
         allow_charged_fragments=allow_charged_fragments)
 
-    return mol
+    mols = rdchem.ResonanceMolSupplier(mol, Chem.UNCONSTRAINED_CATIONS, Chem.UNCONSTRAINED_ANIONS)
+    mols = [mol for mol in mols]
+
+    return mols
 
 def AC2mol_tm(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     """
     """
     global TMs
+
     if set(atoms) & TMs:
         TM_charges_list = tm.get_TM_charges(atoms)
         AC, TM_bonds = get_TM_bonds(AC,atoms)
     else:
         TM_bonds = []
         TM_charges = {}
-        new_mol = AC2mol(mol, AC, atoms, charge, TM_charges, TM_bonds, allow_charged_fragments=True, use_graph=True)
+        new_mols = AC2mol(mol, AC, atoms, charge, TM_charges, TM_bonds, allow_charged_fragments=True, use_graph=True)
         #new_mols = rdchem.ChemMolSupplier(new_smiles)
-        return new_mol
+        return new_mols
 
     new_mols = []
     for TM_charges in TM_charges_list:
@@ -722,9 +725,9 @@ def xyz2mol(atoms, coordinates,
         use_graph=use_graph)
 
     # Check for stereocenters and chiral centers
-    # fix for new_mols
-    #if embed_chiral:
-    #    chiral_stereo_check(new_mol)
+    if embed_chiral:
+            for new_mol in new_mols:
+                chiral_stereo_check(new_mol)
 
     return new_mols
 
@@ -812,13 +815,15 @@ if __name__ == "__main__":
         use_huckel=use_huckel)
 
     # Print output
-    # fix for mols
-    #if args.output_format == "sdf":
-    #    txt = Chem.MolToMolBlock(mol)
-    #    print(txt)
+    for mol in mols:
+        if args.output_format == "sdf":
+            txt = Chem.MolToMolBlock(mol)
+            print(txt)
 
-    #else:
-    # Canonical hack
-    isomeric_smiles = not args.ignore_chiral
-    smiles = [canon_smiles(mol,isomeric_smiles) for mol in mols]
-    print(*smiles)
+        else:
+            # Canonical hack
+            isomeric_smiles = not args.ignore_chiral
+            smiles = Chem.MolToSmiles(mol, isomericSmiles=isomeric_smiles)
+            m = Chem.MolFromSmiles(smiles)
+            smiles = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
+            print(smiles)
