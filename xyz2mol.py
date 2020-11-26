@@ -470,8 +470,6 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
             elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO, valences) and charge_OK:
                 best_BO = BO.copy()
 
-    if not charge_OK:
-        print("Warning: SMILES charge doesn't match input charge")
     return best_BO, atomic_valence_electrons
 
 
@@ -495,6 +493,10 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
         atomic_valence_electrons,
         charge,
         allow_charged_fragments=allow_charged_fragments)
+
+    # If charge is not correct don't return mol
+    if Chem.GetFormalCharge(mol) != charge:
+        return []
 
     # BO2mol returns an arbitrary resonance form. Let's make the rest
     mols = rdchem.ResonanceMolSupplier(mol, Chem.UNCONSTRAINED_CATIONS, Chem.UNCONSTRAINED_ANIONS)
