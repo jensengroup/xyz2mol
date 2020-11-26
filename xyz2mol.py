@@ -477,6 +477,10 @@ def AC2mol(mol, AC, atoms, charge, TM_charges, TM_bonds, allow_charged_fragments
         TM_bonds,
         allow_charged_fragments=allow_charged_fragments)
 
+    # If charge is not correct don't return mol
+    if Chem.GetFormalCharge(mol) != charge:
+        return []
+
     mols = rdchem.ResonanceMolSupplier(mol, Chem.UNCONSTRAINED_CATIONS, Chem.UNCONSTRAINED_ANIONS)
     mols = [mol for mol in mols]
 
