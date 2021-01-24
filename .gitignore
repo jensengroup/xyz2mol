@@ -1,5 +1,7 @@
+# dev
 *.cprof
 .pytest_cache
+.vim
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
