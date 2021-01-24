@@ -46,3 +46,17 @@ Read in xyz file with a charge and print out the SMILES
     rdkit # (version 2019.9.1 or later needed for huckel option)
     networkx
 
+## Development
+
+Setup development enviroment with
+
+    conda create env xyz2mol_dev -f requirements.yml
+    python -m pip install -r requriments.txt
+
+### Testing
+
+
+
+
+
+
