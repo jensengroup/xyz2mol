@@ -13,13 +13,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+          fetch-depth: 100
+    - uses: notlmn/release-with-changelog@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        exclude: '^Meta'
+        commit-template: '- {title} ← {hash}'
+        template: |
+          ### Changelog
+
+          {commits}
+
+          {range}
+
+          ❤
