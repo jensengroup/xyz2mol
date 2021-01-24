@@ -51,11 +51,22 @@ Read in xyz file with a charge and print out the SMILES
 Setup development enviroment with
 
     conda create env xyz2mol_dev -f requirements.yml
+    conda activate xyz2mol_dev
     python -m pip install -r requriments.txt
+    python -m pip install -r requriments.dev.txt
 
 ### Testing
 
+Run all tests with pytest
 
+    python -m pytest -vv ./tests.
+
+
+### Code standard and commit
+
+To pre-format
+
+### Releases
 
 
 
