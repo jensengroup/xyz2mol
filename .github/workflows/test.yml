@@ -32,7 +32,7 @@ jobs:
         conda activate ./env
         # Make sure it is installed
         pre-commit run --all-files
-    - name: Test with pytest
+    - name: Unittest
       run: |
         # Activate
         source $(conda info --root)/etc/profile.d/conda.sh
