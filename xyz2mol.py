@@ -30,6 +30,8 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, rdmolops
 import sys
 
+__version__ = "1.0.0"
+
 global __ATOM_LIST__
 __ATOM_LIST__ = \
     ['h',  'he',
