@@ -3,6 +3,8 @@ PYTHON=python
 CONDA=conda
 FLAKE=flake8
 
+.PHONY: build
+
 all: env
 
 setup: env pip
@@ -21,4 +23,8 @@ test-lint:
 	${FLAKE} *.py --count --select=E9,F63,F7,F82 --show-source --statistics
 	@# exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
 	${FLAKE} *.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+
+build:
+	${PYTHON} setup.py sdist bdist_wheel
 
