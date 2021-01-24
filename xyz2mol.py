@@ -838,16 +838,10 @@ def xyz2mol(
 
 def main():
 
-    return
-
-
-if __name__ == "__main__":
-
     import argparse
 
     parser = argparse.ArgumentParser(usage="%(prog)s [options] molecule.xyz")
     parser.add_argument("structure", metavar="structure", type=str)
-    parser.add_argument("-s", "--sdf", action="store_true", help="Dump sdf file")
     parser.add_argument("--ignore-chiral", action="store_true", help="Ignore chiral centers")
     parser.add_argument(
         "--no-charged-fragments", action="store_true", help="Allow radicals to be made"
@@ -928,3 +922,7 @@ if __name__ == "__main__":
             m = Chem.MolFromSmiles(smiles)
             smiles = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
             print(smiles)
+
+
+if __name__ == "__main__":
+    main()

@@ -76,20 +76,20 @@ repos:
   #         - --ignore-imports=yes
   #         - -d duplicate-code
 
-  - repo: local
-    hooks:
-      - id: jupyisort
-        name: Sorts ipynb imports
-        entry: jupytext --pipe-fmt ".py" --pipe "isort - --multi-line=3 --trailing-comma --force-grid-wrap=0 --use-parentheses --line-width=99"
-        files: .ipynb
-        language: python
-      - id: jupyblack
-        name: Fixes ipynb format
-        entry: jupytext --pipe-fmt ".py" --pipe "black - --line-length=99"
-        files: .ipynb
-        language: python
-      - id: nbconvert
-        name: Removes ipynb content
-        entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --ClearMetadataPreprocessor.enabled=True RegexRemovePreprocessor.enabled=True --to=notebook --log-level=ERROR --inplace
-        files: .ipynb
-        language: python
+  # - repo: local
+  #   hooks:
+  #     - id: jupyisort
+  #       name: Sorts ipynb imports
+  #       entry: jupytext --pipe-fmt ".py" --pipe "isort - --multi-line=3 --trailing-comma --force-grid-wrap=0 --use-parentheses --line-width=99"
+  #       files: .ipynb
+  #       language: python
+  #     - id: jupyblack
+  #       name: Fixes ipynb format
+  #       entry: jupytext --pipe-fmt ".py" --pipe "black - --line-length=99"
+  #       files: .ipynb
+  #       language: python
+  #     - id: nbconvert
+  #       name: Removes ipynb content
+  #       entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --ClearMetadataPreprocessor.enabled=True RegexRemovePreprocessor.enabled=True --to=notebook --log-level=ERROR --inplace
+  #       files: .ipynb
+  #       language: python

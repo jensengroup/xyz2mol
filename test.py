@@ -118,8 +118,6 @@ def test_smiles_from_adjacent_matrix(smiles):
 
     assert canonical_smiles in new_mol_smiles_list
 
-    return
-
 
 @pytest.mark.parametrize("smiles", __TEST_SMILES__)
 def test_smiles_from_coord_vdw(smiles):
@@ -149,8 +147,6 @@ def test_smiles_from_coord_vdw(smiles):
         smiles_list.append(smiles)
 
     assert canonical_smiles in smiles_list
-
-    return
 
 
 @pytest.mark.parametrize("smiles", __TEST_SMILES__)
@@ -182,13 +178,9 @@ def test_smiles_from_coord_huckel(smiles):
 
     assert canonical_smiles in smiles_list
 
-    return
-
 
 @pytest.mark.parametrize("filename, charge, answer", __TEST_FILES__)
 def test_smiles_from_xyz_files(filename, charge, answer):
-
-    pass
 
     atoms, charge_read, coordinates = x2m.read_xyz_file(filename)
 
@@ -202,31 +194,3 @@ def test_smiles_from_xyz_files(filename, charge, answer):
         smiles_list.append(smiles)
 
     assert answer in smiles_list
-
-    return
-
-
-if __name__ == "__main__":
-
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--test-type", type=str, help="")
-    parser.add_argument("-s", "--smiles", help="")
-    args = parser.parse_args()
-
-    for smiles in __TEST_SMILES__:
-        test_smiles_from_adjacent_matrix(smiles)
-        print(True, smiles)
-
-    for filename, charge, answer in __TEST_FILES__:
-        test_smiles_from_xyz_files(filename, charge, answer)
-        print(True, answer)
-
-    for smiles in __TEST_SMILES__:
-        test_smiles_from_coord_vdw(smiles)
-        print(True, smiles)
-
-    for smiles in __TEST_SMILES__:
-        test_smiles_from_coord_huckel(smiles)
-        print(True, smiles)
