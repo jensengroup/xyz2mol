@@ -11,20 +11,19 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
-          fetch-depth: 100
-    - uses: notlmn/release-with-changelog@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        exclude: '^Meta'
-        commit-template: '- {title} ← {hash}'
-        template: |
-          ### Changelog
+          fetch-depth: 0
+      - uses: notlmn/release-with-changelog@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exclude: '^Meta'
+          commit-template: '- {title} ← {hash}'
+          template: |
+            ### Changelog
 
-          {commits}
+            {commits}
 
-          {range}
+            {range}
 
-          ❤
+            ❤
