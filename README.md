@@ -59,7 +59,7 @@ Setup development enviroment with
 
 Run all tests with pytest
 
-    python -m pytest -vv ./tests.
+    python -m pytest -vv test.py
 
 
 ### Code standard and commit
@@ -79,5 +79,3 @@ Increment the release by
     git commit . -m "We did some changes" # Do some commits
     git tag v1.1.5 # Add this tag to the newest commit
     git push origin v1.1.5 # This will trigger the release build
-
-
