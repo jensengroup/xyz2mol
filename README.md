@@ -46,3 +46,36 @@ Read in xyz file with a charge and print out the SMILES
     rdkit # (version 2019.9.1 or later needed for huckel option)
     networkx
 
+## Development
+
+Setup development enviroment with
+
+    conda create env xyz2mol_dev -f requirements.yml
+    conda activate xyz2mol_dev
+    python -m pip install -r requriments.txt
+    python -m pip install -r requriments.dev.txt
+
+### Testing
+
+Run all tests with pytest
+
+    python -m pytest -vv test.py
+
+
+### Code standard and commit
+
+To keep code standard and ensure quality code, we use `pre-commit`.
+Please install `pre-commit` in your local repository
+
+    pre-commit install
+
+which will install a hook into your git, and run a format and code-quality check with each commit.
+
+### Releases
+
+To do a release we use GitHub actions on Git Tags.
+Increment the release by
+
+    git commit . -m "We did some changes" # Do some commits
+    git tag v1.1.5 # Add this tag to the newest commit
+    git push origin v1.1.5 # This will trigger the release build

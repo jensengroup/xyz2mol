@@ -1,5 +1,11 @@
+# test left-overs
+nul
+run.out
+
+# dev
 *.cprof
 .pytest_cache
+.vim
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
