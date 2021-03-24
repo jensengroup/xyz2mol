@@ -57,7 +57,7 @@ atomic_valence[8] = [2,1,3]
 atomic_valence[9] = [1]
 atomic_valence[14] = [4]
 atomic_valence[15] = [5,3] #[5,4,3]
-atomic_valence[16] = [6,3,2] #[6,4,2]
+atomic_valence[16] = [6,2,4]
 atomic_valence[17] = [1]
 atomic_valence[32] = [4]
 atomic_valence[35] = [1]
@@ -140,7 +140,7 @@ def valences_not_too_large(BO, valences):
 
     return True
 
-def charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
+def charge_is_OK(BO, AC, charge, atomic_valence_electrons, atoms, valences,
                  allow_charged_fragments=True):
     # total charge
     Q = 0
@@ -192,7 +192,7 @@ def BO_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
         return False
 
     check_sum = (BO - AC).sum() == sum(DU)
-    check_charge = charge_is_OK(BO, AC, charge, DU, atomic_valence_electrons, atoms, valences,
+    check_charge = charge_is_OK(BO, AC, charge, atomic_valence_electrons, atoms, valences,
                                 allow_charged_fragments)
 
     if check_charge and check_sum: 
@@ -211,7 +211,7 @@ def get_atomic_charge(atom, atomic_valence_electrons, BO_valence):
         charge = 3 - BO_valence
     elif atom == 15 and BO_valence == 5:
         charge = 0
-    elif atom == 16 and BO_valence == 6:
+    elif atom == 16 and BO_valence in [4, 6]:
         charge = 0
     else:
         charge = atomic_valence_electrons - 8 + BO_valence
@@ -440,6 +440,14 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     valences_list = itertools.product(*valences_list_of_lists)
 
     best_BO = AC.copy()
+    lowest_penalty = 2**32 # a very large int
+    #fewest_atomic_charges = 2**32 # a very large int
+    #fewest_unwanted_charges = 2**32
+
+    num_valences = 1
+    for vale in valences_list_of_lists:
+        num_valences *= len(vale)
+    print('valences: %d' % num_valences)
 
     for valences in valences_list:
 
@@ -454,7 +462,7 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
             check_bo = None
 
         if check_len and check_bo:
-            return AC, atomic_valence_electrons
+            return AC
 
         UA_pairs_list = get_UA_pairs(UA, AC, use_graph=use_graph)
         for UA_pairs in UA_pairs_list:
@@ -462,15 +470,33 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
             status = BO_is_OK(BO, AC, charge, DU_from_AC,
                         atomic_valence_electrons, atoms, valences,
                         allow_charged_fragments=allow_charged_fragments)
-            charge_OK = charge_is_OK(BO, AC, charge, DU_from_AC, atomic_valence_electrons, atoms, valences,
+            charge_OK = charge_is_OK(BO, AC, charge, atomic_valence_electrons, atoms, valences,
                                      allow_charged_fragments=allow_charged_fragments)
-
-            if status:
-                return BO, atomic_valence_electrons
-            elif BO.sum() >= best_BO.sum() and valences_not_too_large(BO, valences) and charge_OK:
+            BO_valences = list(BO.sum(axis=1))
+            num_atomic_charges = 0 # cumulative count (modulo) of charges on atoms
+            num_unwanted_charges = 0 # not [N+] and not [O-]
+            penalty = 0
+            for index, atom in enumerate(atoms):
+                current_charge = get_atomic_charge(atom, atomic_valence_electrons[atom], BO_valences[index])
+                num_atomic_charges += abs(current_charge)
+                is_positive_nitrogen = atom == 7 and current_charge == 1
+                is_negative_oxygen = atom == 8 and current_charge == -1
+                if not (is_positive_nitrogen or is_negative_oxygen):
+                    num_unwanted_charges += abs(current_charge)
+                # give +3 penalty to =S=
+                if atom == 16 and BO_valences[index] == 4 and AC.sum(axis=1)[index] == 2:
+                    penalty += 3 # lowest penalty to favor -S- over =S= in 3-methylthiazolium
+            #fewest_atomic_charges = min(fewest_atomic_charges, num_atomic_charges)
+            #fewest_unwanted_charges = min(fewest_unwanted_charges, num_unwanted_charges)
+            penalty +=  8 * num_unwanted_charges # 8 was picked randomly
+            penalty +=  1 * num_atomic_charges
+            penalty -=  1 * BO.sum()    # maximize bond order
+            penalty -= 42 * status      # 42 was picked randomly
+            lowest_penalty = min(lowest_penalty, penalty)
+            if valences_not_too_large(BO, valences) and charge_OK and penalty == lowest_penalty:
                 best_BO = BO.copy()
 
-    return best_BO, atomic_valence_electrons
+    return best_BO
 
 
 def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
@@ -478,7 +504,7 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
     """
 
     # convert AC matrix to bond order (BO) matrix
-    BO, atomic_valence_electrons = AC2BO(
+    BO = AC2BO(
         AC,
         atoms,
         charge,
@@ -608,19 +634,25 @@ def get_AC(mol, covalent_factor=1.3):
 
     """
 
+    pt = Chem.GetPeriodicTable()
+    def get_covalent_radius(atomic_number):
+        """workaround because RDKit's radius for phosphorous is too small"""
+        if atomic_number == 15:
+            return 1.05
+        return pt.GetRcovalent(atomic_number)
+
     # Calculate distance matrix
     dMat = Chem.Get3DDistanceMatrix(mol)
 
-    pt = Chem.GetPeriodicTable()
     num_atoms = mol.GetNumAtoms()
     AC = np.zeros((num_atoms, num_atoms), dtype=int)
 
     for i in range(num_atoms):
         a_i = mol.GetAtomWithIdx(i)
-        Rcov_i = pt.GetRcovalent(a_i.GetAtomicNum()) * covalent_factor
+        Rcov_i = get_covalent_radius(a_i.GetAtomicNum()) * covalent_factor
         for j in range(i + 1, num_atoms):
             a_j = mol.GetAtomWithIdx(j)
-            Rcov_j = pt.GetRcovalent(a_j.GetAtomicNum()) * covalent_factor
+            Rcov_j = get_covalent_radius(a_j.GetAtomicNum()) * covalent_factor
             if dMat[i, j] <= Rcov_i + Rcov_j:
                 AC[i, j] = 1
                 AC[j, i] = 1
@@ -783,7 +815,7 @@ if __name__ == "__main__":
     # chiral comment
     embed_chiral = not args.ignore_chiral
 
-    # read atoms and coordinates. Try to find the charge
+    # read atoms and coordinates. Try to find the charge in the xyz file
     atoms, charge, xyz_coordinates = read_xyz_file(filename)
 
     # huckel uses extended Huckel bond orders to locate bonds (requires RDKit 2019.9.1 or later)
