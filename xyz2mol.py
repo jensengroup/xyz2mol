@@ -492,8 +492,9 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
             penalty +=  1 * num_atomic_charges
             penalty -=  1 * BO.sum()    # maximize bond order
             penalty -= 42 * status      # 42 was picked randomly
-            lowest_penalty = min(lowest_penalty, penalty)
-            if valences_not_too_large(BO, valences) and charge_OK and penalty == lowest_penalty:
+            if valences_not_too_large(BO, valences) and charge_OK and penalty < lowest_penalty:
+                lowest_penalty = min(lowest_penalty, penalty)
+                print(penalty, lowest_penalty)
                 best_BO = BO.copy()
 
     return best_BO
