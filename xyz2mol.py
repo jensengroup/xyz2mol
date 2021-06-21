@@ -447,7 +447,7 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     num_valences = 1
     for vale in valences_list_of_lists:
         num_valences *= len(vale)
-    print('valences: %d' % num_valences)
+    #print('valences: %d' % num_valences)
 
     for valences in valences_list:
 
@@ -546,27 +546,34 @@ def get_proto_mol(atoms):
     return mol
 
 
-def read_xyz_file(filename, look_for_charge=True):
-    """
-    """
+def read_xyz_file(filename):
+    with open(filename) as f:
+        string = f.read()
+    return read_xyz_string(string)
 
+def read_xyz_string(string):
     atomic_symbols = []
     xyz_coordinates = []
     charge = 0
     title = ""
+    line_number = 0
 
-    with open(filename, "r") as file:
-        for line_number, line in enumerate(file):
-            if line_number == 0:
-                num_atoms = int(line)
-            elif line_number == 1:
-                title = line
-                if "charge=" in line:
-                    charge = int(line.split("=")[1])
-            else:
-                atomic_symbol, x, y, z = line.split()
-                atomic_symbols.append(atomic_symbol)
-                xyz_coordinates.append([float(x), float(y), float(z)])
+    lines = string.split('\n')
+    if len(lines[-1]) == 0:
+        lines = lines[:-1]
+
+    for line in lines:
+        if line_number == 0:
+            num_atoms = int(line)
+        elif line_number == 1:
+            title = line
+            if "charge=" in line:
+                charge = int(line.split("=")[1])
+        else:
+            atomic_symbol, x, y, z = line.split()
+            atomic_symbols.append(atomic_symbol)
+            xyz_coordinates.append([float(x), float(y), float(z)])
+        line_number += 1
 
     atoms = [int_atom(atom) for atom in atomic_symbols]
 
