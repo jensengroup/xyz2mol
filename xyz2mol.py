@@ -50,33 +50,53 @@ global atomic_valence_electrons
 
 atomic_valence = defaultdict(list)
 atomic_valence[1] = [1]
+atomic_valence[2] = [0]
+atomic_valence[3] = [1]
 atomic_valence[5] = [3,4]
 atomic_valence[6] = [4]
 atomic_valence[7] = [3,4]
 atomic_valence[8] = [2,1,3]
 atomic_valence[9] = [1]
+atomic_valence[10] = [0]
+atomic_valence[11] = [1]
+atomic_valence[12] = [2]
+atomic_valence[18] = [0]
+atomic_valence[19] = [1]
+atomic_valence[20] = [2]
 atomic_valence[14] = [4]
 atomic_valence[15] = [5,3] #[5,4,3]
 atomic_valence[16] = [6,2,4]
 atomic_valence[17] = [1]
 atomic_valence[32] = [4]
 atomic_valence[35] = [1]
+atomic_valence[36] = [0]
 atomic_valence[53] = [1]
+atomic_valence[54] = [0]
 
 atomic_valence_electrons = {}
 atomic_valence_electrons[1] = 1
+atomic_valence_electrons[2] = 8 # ugly hack, sorry
+atomic_valence_electrons[3] = 1
 atomic_valence_electrons[5] = 3
 atomic_valence_electrons[6] = 4
 atomic_valence_electrons[7] = 5
 atomic_valence_electrons[8] = 6
 atomic_valence_electrons[9] = 7
+atomic_valence_electrons[10] = 8
+atomic_valence_electrons[11] = 1
+atomic_valence_electrons[12] = 2
 atomic_valence_electrons[14] = 4
 atomic_valence_electrons[15] = 5
 atomic_valence_electrons[16] = 6
 atomic_valence_electrons[17] = 7
+atomic_valence_electrons[18] = 8
+atomic_valence_electrons[19] = 1
+atomic_valence_electrons[20] = 2
 atomic_valence_electrons[32] = 4
 atomic_valence_electrons[35] = 7
+atomic_valence_electrons[36] = 8
 atomic_valence_electrons[53] = 7
+atomic_valence_electrons[54] = 8
 
 
 def str_atom(atom):
@@ -205,8 +225,10 @@ def get_atomic_charge(atom, atomic_valence_electrons, BO_valence):
     """
     """
 
-    if atom == 1:
+    if atom in [1, 3, 11, 19]:
         charge = 1 - BO_valence
+    elif atom in [12, 20]:
+        charge = 2 - BO_valence
     elif atom == 5:
         charge = 3 - BO_valence
     elif atom == 15 and BO_valence == 5:
@@ -432,6 +454,7 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
         # valence can't be smaller than number of neighbourgs
         possible_valence = [x for x in atomic_valence[atomicNum] if x >= valence]
         if not possible_valence:
+            print(atomicNum)
             print('Valence of atom',i,'is',valence,'which bigger than allowed max',max(atomic_valence[atomicNum]),'. Stopping')
             sys.exit()
         valences_list_of_lists.append(possible_valence)
@@ -523,6 +546,7 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
 
     # If charge is not correct don't return mol
     if Chem.GetFormalCharge(mol) != charge:
+        print('Charge mismatch: %d %d' % (Chem.GetFormalCharge(mol), charge))
         return []
 
     # BO2mol returns an arbitrary resonance form. Let's make the rest
@@ -645,6 +669,8 @@ def get_AC(mol, covalent_factor=1.3):
     pt = Chem.GetPeriodicTable()
     def get_covalent_radius(atomic_number):
         """workaround because RDKit's radius for phosphorous is too small"""
+        if atomic_number == 1:
+            return 0.31
         if atomic_number == 15:
             return 1.05
         return pt.GetRcovalent(atomic_number)
@@ -664,7 +690,6 @@ def get_AC(mol, covalent_factor=1.3):
             if dMat[i, j] <= Rcov_i + Rcov_j:
                 AC[i, j] = 1
                 AC[j, i] = 1
-
     return AC
 
 
