@@ -257,7 +257,7 @@ def clean_charges(mol):
 
 
 def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
-           mol_charge, allow_charged_fragments=True):
+           mol_charge, allow_charged_fragments=True,  use_atom_maps=False):
     """
     based on code written by Paolo Toscani
 
@@ -311,20 +311,25 @@ def BO2mol(mol, BO_matrix, atoms, atomic_valence_electrons,
             atomic_valence_electrons,
             BO_valences,
             BO_matrix,
-            mol_charge)
+            mol_charge,
+            use_atom_maps)
     else:
-        mol = set_atomic_radicals(mol, atoms, atomic_valence_electrons, BO_valences)
+        mol = set_atomic_radicals(mol, atoms, atomic_valence_electrons, BO_valences,
+                                                            use_atom_maps)
 
     return mol
 
 
 def set_atomic_charges(mol, atoms, atomic_valence_electrons,
-                       BO_valences, BO_matrix, mol_charge):
+                       BO_valences, BO_matrix, mol_charge,
+                       use_atom_maps):
     """
     """
     q = 0
     for i, atom in enumerate(atoms):
         a = mol.GetAtomWithIdx(i)
+        if use_atom_maps:
+            a.SetAtomMapNum(i+1)
         charge = get_atomic_charge(atom, atomic_valence_electrons[atom], BO_valences[i])
         q += charge
         if atom == 6:
@@ -344,7 +349,8 @@ def set_atomic_charges(mol, atoms, atomic_valence_electrons,
     return mol
 
 
-def set_atomic_radicals(mol, atoms, atomic_valence_electrons, BO_valences):
+def set_atomic_radicals(mol, atoms, atomic_valence_electrons, BO_valences,
+                                                use_atom_maps):
     """
 
     The number of radical electrons = absolute atomic charge
@@ -352,6 +358,8 @@ def set_atomic_radicals(mol, atoms, atomic_valence_electrons, BO_valences):
     """
     for i, atom in enumerate(atoms):
         a = mol.GetAtomWithIdx(i)
+        if use_atom_maps:
+            a.SetAtomMapNum(i+1)
         charge = get_atomic_charge(
             atom,
             atomic_valence_electrons[atom],
@@ -473,7 +481,8 @@ def AC2BO(AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
     return best_BO, atomic_valence_electrons
 
 
-def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True):
+def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, 
+           use_graph=True, use_atom_maps=False):
     """
     """
 
@@ -492,7 +501,8 @@ def AC2mol(mol, AC, atoms, charge, allow_charged_fragments=True, use_graph=True)
         atoms,
         atomic_valence_electrons,
         charge,
-        allow_charged_fragments=allow_charged_fragments)
+        allow_charged_fragments=allow_charged_fragments,
+        use_atom_maps=use_atom_maps)
 
     # If charge is not correct don't return mol
     if Chem.GetFormalCharge(mol) != charge:
@@ -628,7 +638,7 @@ def get_AC(mol, covalent_factor=1.3):
     return AC
 
 
-def xyz2AC_huckel(atomicNumList,xyz,charge):
+def xyz2AC_huckel(atomicNumList, xyz, charge):
     """
 
     args
@@ -684,12 +694,9 @@ def chiral_stereo_check(mol):
     return
 
 
-def xyz2mol(atoms, coordinates,
-    charge=0,
-    allow_charged_fragments=True,
-    use_graph=True,
-    use_huckel=False,
-    embed_chiral=True):
+def xyz2mol(atoms, coordinates, charge=0, allow_charged_fragments=True,
+            use_graph=True, use_huckel=False, embed_chiral=True,
+            use_atom_maps=False):
     """
     Generate a rdkit molobj from atoms, coordinates and a total_charge.
 
@@ -715,9 +722,10 @@ def xyz2mol(atoms, coordinates,
 
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
-    new_mols = AC2mol(mol, AC, atoms, charge,
-        allow_charged_fragments=allow_charged_fragments,
-        use_graph=use_graph)
+    new_mol = AC2mol(mol, AC, atoms, charge,
+                     allow_charged_fragments=allow_charged_fragments,
+                     use_graph=use_graph,
+                     use_atom_maps=use_atom_maps)
 
     # Check for stereocenters and chiral centers
     if embed_chiral:
