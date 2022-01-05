@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="xyz2mol",
-    version="0.1.1",
+    version="0.1.2",
     description="Convert Cartesian coordinates to one or more molecular graphs",
     url="https://github.com/jensengroup/xyz2mol",
     py_modules=["xyz2mol"],
