@@ -722,7 +722,7 @@ def xyz2mol(atoms, coordinates, charge=0, allow_charged_fragments=True,
 
     # Convert AC to bond order matrix and add connectivity and charge info to
     # mol object
-    new_mol = AC2mol(mol, AC, atoms, charge,
+    new_mols = AC2mol(mol, AC, atoms, charge,
                      allow_charged_fragments=allow_charged_fragments,
                      use_graph=use_graph,
                      use_atom_maps=use_atom_maps)
