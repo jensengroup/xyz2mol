@@ -13,7 +13,9 @@ DOI: [10.1002/bkcs.10334](http://dx.doi.org/10.1002/bkcs.10334)
 
 ## Setup
 
-Depends on `rdkit`, `numpy`, and `networkx`. Easiest to setup via anaconda/conda: conda install -c conda-forge xyz2mol
+Depends on `rdkit`, `numpy`, and `networkx`. Easiest to setup via anaconda/conda: 
+
+`conda install -c conda-forge xyz2mol`
 
 Setup for a standalone enviroment is avaliable via `Makefile`. To setup and test simply clone the project and make.
 
