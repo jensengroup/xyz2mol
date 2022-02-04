@@ -21,8 +21,6 @@ try:
 except ImportError:
     rdEHTTools = None
 
-from collections import defaultdict
-
 import numpy as np
 import networkx as nx
 
