@@ -20,6 +20,8 @@ try:
     from rdkit.Chem import rdEHTTools #requires RDKit 2019.9.1 or later
 except ImportError:
     rdEHTTools = None
+    
+from collections import defaultdict
 
 import numpy as np
 import networkx as nx
