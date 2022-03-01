@@ -747,9 +747,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(usage='%(prog)s [options] molecule.xyz')
     parser.add_argument('structure', metavar='structure', type=str)
-    parser.add_argument('-s', '--sdf',
-        action="store_true",
-        help="Dump sdf file")
     parser.add_argument('--ignore-chiral',
         action="store_true",
         help="Ignore chiral centers")
@@ -768,7 +765,9 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output-format',
         action="store",
         type=str,
-        help="Output format [smiles,sdf] (default=sdf)")
+        default="sdf",
+        choices=["sdf", "smiles", "smi"],
+        help="Output format")
     parser.add_argument('-c', '--charge',
         action="store",
         metavar="int",
