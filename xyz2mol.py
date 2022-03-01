@@ -814,7 +814,7 @@ if __name__ == "__main__":
         if args.output_format == "sdf":
             txt = Chem.MolToMolBlock(mol)
             print(txt)
-        elif args.output_format == "smiles" or args.output_format == "smi":
+        elif args.output_format in ["smiles", "smi"]:
             # Canonical hack
             isomeric_smiles = not args.ignore_chiral
             smiles = Chem.MolToSmiles(mol, isomericSmiles=isomeric_smiles)
@@ -822,4 +822,5 @@ if __name__ == "__main__":
             smiles = Chem.MolToSmiles(m, isomericSmiles=isomeric_smiles)
             print(smiles)
         else:
+            # This should never happen if parser's choices are set correctly
             raise ValueError(f"Unsupported output format: {args.output_format}")
