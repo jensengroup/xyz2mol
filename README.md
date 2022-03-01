@@ -17,7 +17,7 @@ Depends on `rdkit`, `numpy`, and `networkx`. Easiest to setup via anaconda/conda
 
 `conda install -c conda-forge xyz2mol`
 
-Setup for a standalone enviroment is avaliable via `Makefile`. To setup and test simply clone the project and make.
+Setup for a standalone environment is available via `Makefile`. To setup and test simply clone the project and make.
 
     git clone https://github.com/jensengroup/xyz2mol
 
@@ -31,7 +31,7 @@ Note, it is also possible to run the code without the `networkx` dependencies, b
 
 ## Example usage
 
-Read in xyz file and print out the SMILES, but don't incode the chirality.
+Read in xyz file and print out the SMILES, but don't encode the chirality.
 
     xyz2mol.py examples/chiral_stereo_test.xyz --ignore-chiral
 
