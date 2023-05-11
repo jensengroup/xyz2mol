@@ -1,3 +1,9 @@
+# xyz2mol has now been implented in RDKit
+
+raw_mol = Chem.MolFromXYZFile('acetate.xyz')
+mol = Chem.Mol(raw_mol)
+rdDetermineBonds.DetermineBonds(mol,charge=-1)
+
 # Convert Cartesian coordinates to one or more molecular graphs
 
 Given Cartesian coordinates in the form of a `.xyz` file, the code constructs a list of one or more molecular graphs. In cases where there are several possible resonance forms xyz2mol returns a list of all, otherwise just a list of one.
