@@ -4,3 +4,4 @@ networkx
 rmsd
 pytest
 flake8
+rdkit
