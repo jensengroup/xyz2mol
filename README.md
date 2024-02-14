@@ -8,7 +8,9 @@ rdDetermineBonds.DetermineBonds(mol,charge=-1)
 
 # Convert Cartesian coordinates to one or more molecular graphs
 
-Given Cartesian coordinates in the form of a `.xyz` file, the code constructs a list of one or more molecular graphs. In cases where there are several possible resonance forms xyz2mol returns a list of all, otherwise just a list of one.
+Given Cartesian coordinates in the form of a `.xyz` file, the code constructs a
+list of one or more molecular graphs. In cases where there are several possible
+resonance forms xyz2mol returns a list of all, otherwise just a list of one.
 
 This code is based on the work of
 DOI: [10.1002/bkcs.10334](http://dx.doi.org/10.1002/bkcs.10334)
@@ -19,13 +21,19 @@ DOI: [10.1002/bkcs.10334](http://dx.doi.org/10.1002/bkcs.10334)
     Bull. Korean Chem. Soc.
     2015, Vol. 36, 1769-1777
 
+At the 2020 RDKit Virtual UGM, Jan H. Jensen presented the tool with his talk
+"Dealing with organometallic molecules in RDKit"
+([slides](https://github.com/rdkit/UGM_2020/blob/master/Presentations/JanJensen.pdf),
+[video recording](https://www.youtube.com/watch?v=HD6IpXMVKeo)).
+
 ## Setup
 
 Depends on `rdkit`, `numpy`, and `networkx`. Easiest to setup via anaconda/conda: 
 
 `conda install -c conda-forge xyz2mol`
 
-Setup for a standalone enviroment is avaliable via `Makefile`. To setup and test simply clone the project and make.
+Setup for a standalone enviroment is avaliable via `Makefile`. To setup and test
+simply clone the project and make.
 
     git clone https://github.com/jensengroup/xyz2mol
 
@@ -34,7 +42,8 @@ and then run the following the the `xyz2mol` folder
     make
     make test
 
-Note, it is also possible to run the code without the `networkx` dependencies, but is slower.
+Note, it is also possible to run the code without the `networkx` dependencies,
+but is slower.
 
 
 ## Example usage
