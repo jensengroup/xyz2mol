@@ -529,8 +529,16 @@ def get_proto_mol(atoms):
     return mol
 
 
-def read_xyz_file(filename, look_for_charge=True):
+def read_xyz_file(filename):
     """
+    Takes xyz file. Also accept xyz files without title lines and
+    xyz files containing connectivity info (Tinker format) as well
+    as ones which have leading atomic numbers before the atomic symbols.
+    
+    args:
+        filename for xyz file
+    returns:
+        RDKit mol object
     """
 
     atomic_symbols = []
@@ -542,19 +550,32 @@ def read_xyz_file(filename, look_for_charge=True):
         for line_number, line in enumerate(file):
             if line_number == 0:
                 num_atoms = int(line)
-            elif line_number == 1:
+            elif line_number == 1 and len(line.split()) < 4:
                 title = line
                 if "charge=" in line:
                     charge = int(line.split("=")[1])
+            elif line_number == 1 and len(line.split()) >= 4 and not \
+                 ((line.split()[0].strip('-')[0].isdigit() and \
+                 line.split()[2].strip('-')[0].isdigit() and \
+                 line.split()[3].strip('-')[0].isdigit()) or \
+                 (line.split()[1].strip('-')[0].isdigit() and \
+                 line.split()[2].strip('-')[0].isdigit() and \
+                 line.split()[3].strip('-')[0].isdigit())):
+                title = line
+                if "charge=" in line:
+                    charge = int(line.split("=")[1])
+            elif line.split()[0].isnumeric():
+                atomic_symbol, x, y, z = line.split()[1:5]
+                atomic_symbols.append(atomic_symbol)
+                xyz_coordinates.append([float(x), float(y), float(z)])
             else:
-                atomic_symbol, x, y, z = line.split()
+                atomic_symbol, x, y, z = line.split()[0:4]
                 atomic_symbols.append(atomic_symbol)
                 xyz_coordinates.append([float(x), float(y), float(z)])
 
     atoms = [int_atom(atom) for atom in atomic_symbols]
 
     return atoms, charge, xyz_coordinates
-
 
 def xyz2AC(atoms, xyz, charge, use_huckel=False):
     """
