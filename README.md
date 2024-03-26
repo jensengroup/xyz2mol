@@ -1,9 +1,14 @@
 # xyz2mol has now been implented in RDKit
 
 ```
+from rdkit import Chem
+from rdkit.Chem import rdDetermineBonds
+
 raw_mol = Chem.MolFromXYZFile('acetate.xyz')
 mol = Chem.Mol(raw_mol)
 rdDetermineBonds.DetermineBonds(mol,charge=-1)
+
+print(Chem.MolToMolBlock(mol))
 ```
 
 # Convert Cartesian coordinates to one or more molecular graphs
