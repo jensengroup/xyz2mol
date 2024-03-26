@@ -56,6 +56,9 @@ Read in xyz file with a charge and print out the SMILES
 
     xyz2mol.py examples/acetate.xyz --charge -1
 
+For additional examples of application, visit the corresponding post on the
+[RDKit blog](https://greglandrum.github.io/rdkit-blog/posts/2022-12-18-introducing-rdDetermineBonds.html)
+
 ## Dependencies:
 
     rdkit # (version 2019.9.1 or later needed for huckel option)
