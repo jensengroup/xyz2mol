@@ -1,9 +1,14 @@
 # xyz2mol has now been implemented in RDKit
 
 ```
+from rdkit import Chem
+from rdkit.Chem import rdDetermineBonds
+
 raw_mol = Chem.MolFromXYZFile('acetate.xyz')
 mol = Chem.Mol(raw_mol)
 rdDetermineBonds.DetermineBonds(mol,charge=-1)
+
+print(Chem.MolToMolBlock(mol))
 ```
 
 # Convert Cartesian coordinates to one or more molecular graphs
@@ -21,7 +26,7 @@ DOI: [10.1002/bkcs.10334](http://dx.doi.org/10.1002/bkcs.10334)
 
 ## Setup
 
-Depends on `rdkit`, `numpy`, and `networkx`. Easiest to setup via anaconda/conda: 
+Depends on `rdkit`, `numpy`, and `networkx`. Easiest to setup via anaconda/conda:
 
 `conda install -c conda-forge xyz2mol`
 
@@ -35,7 +40,6 @@ and then run the following the the `xyz2mol` folder
     make test
 
 Note, it is also possible to run the code without the `networkx` dependencies, but is slower.
-
 
 ## Example usage
 
@@ -51,7 +55,10 @@ Read in xyz file with a charge and print out the SMILES
 
     xyz2mol.py examples/acetate.xyz --charge -1
 
-## Dependencies:
+For additional examples of application, visit the corresponding post on the
+[RDKit blog](https://greglandrum.github.io/rdkit-blog/posts/2022-12-18-introducing-rdDetermineBonds.html)
+
+## Dependencies
 
     rdkit # (version 2019.9.1 or later needed for huckel option)
     networkx
