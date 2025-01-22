@@ -1,4 +1,4 @@
-# xyz2mol has now been implented in RDKit
+# xyz2mol has now been implemented in RDKit
 
 ```
 raw_mol = Chem.MolFromXYZFile('acetate.xyz')
